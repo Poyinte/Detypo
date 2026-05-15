@@ -20,8 +20,8 @@ TEMPERATURE = 0.1
 REQUEST_TIMEOUT = 300
 
 # Server
-HOST = "127.0.0.1"
-PORT = 3000
+HOST = os.getenv("HOST", "127.0.0.1")
+PORT = int(os.getenv("PORT", "3000"))
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 
 # Proofreading rules
