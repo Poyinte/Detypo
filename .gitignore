@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+uploads/
+*.pdf
+.env
+.venv/
+frontend/node_modules/
+frontend/dist/
+/tmp/
