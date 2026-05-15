@@ -6,8 +6,8 @@ setlocal enabledelayedexpansion
 :: detypo.bat - Detypo PDF Proofreader one-click launcher (Windows)
 :: =============================================================================
 :: Usage:
-::   detypo.bat             Prod mode (build frontend, serve at :3000)
-::   detypo.bat dev          Dev mode (hot-reload, opens browser at :4000)
+::   detypo.bat             Prod mode (build, serve at :3000) [default]
+::   detypo.bat dev          Dev mode (hot-reload, opens :4000)
 ::   detypo.bat stop         Stop all services
 ::
 :: Requires: Python 3.10+, Node.js 18+
@@ -40,33 +40,34 @@ if %errorlevel% neq 0 (
 )
 
 :: ---- Dispatch ----
-if /i "%~1"=="stop" goto :stop_all
-if /i "%~1"=="dev"  goto :dev_mode
+if /i "%~1"=="stop"  goto :do_stop
+if /i "%~1"=="dev"   goto :do_dev
+goto :do_prod
 
 :: ======================== PROD MODE (default) ========================
-:prod_mode
+:do_prod
 echo [detypo] Detypo - Prod Mode
 
-:: Install Python deps if needed
+:: Install Python deps
 %PYTHON% -c "import fastapi,uvicorn,pymupdf,requests,pydantic" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [detypo] Installing Python dependencies...
     pip install -r requirements.txt >nul 2>&1
     if !errorlevel! neq 0 (
-        echo [detypo] Python dep install failed. Check network.
+        echo [detypo] Python dep install failed
         exit /b 1
     )
     echo [detypo] Python deps ready
 )
 
-:: Install frontend deps if needed
+:: Install frontend deps
 if not exist "frontend\node_modules\" (
     echo [detypo] Installing frontend dependencies...
     cd frontend
     call npm install --silent
     cd ..
     if !errorlevel! neq 0 (
-        echo [detypo] Frontend dep install failed. Check network.
+        echo [detypo] Frontend dep install failed
         exit /b 1
     )
     echo [detypo] Frontend deps ready
@@ -90,46 +91,45 @@ timeout /t 1 /nobreak >nul
 echo.
 echo ======================================
 echo   Detypo is running (prod)
-echo   URL:  http://127.0.0.1:%BACKEND_PORT%
+echo   URL:  http://127.0.0.1:3000
 echo   Stop: Ctrl+C
 echo ======================================
 echo.
-start "" "http://127.0.0.1:%BACKEND_PORT%"
-set NO_COLOR=1
+start "" "http://127.0.0.1:3000"
 %PYTHON% server.py
 goto :eof
 
 
 :: ======================== DEV MODE ========================
-:dev_mode
+:do_dev
 echo [detypo] Detypo - Dev Mode
 
-:: Install Python deps if needed
+:: Install Python deps
 %PYTHON% -c "import fastapi,uvicorn,pymupdf,requests,pydantic" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [detypo] Installing Python dependencies...
     pip install -r requirements.txt >nul 2>&1
     if !errorlevel! neq 0 (
-        echo [detypo] Python dep install failed. Check network.
+        echo [detypo] Python dep install failed
         exit /b 1
     )
     echo [detypo] Python deps ready
 )
 
-:: Install frontend deps if needed
+:: Install frontend deps
 if not exist "frontend\node_modules\" (
     echo [detypo] Installing frontend dependencies...
     cd frontend
     call npm install --silent
     cd ..
     if !errorlevel! neq 0 (
-        echo [detypo] Frontend dep install failed. Check network.
+        echo [detypo] Frontend dep install failed
         exit /b 1
     )
     echo [detypo] Frontend deps ready
 )
 
-:: Kill existing processes on our ports
+:: Kill ports
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 timeout /t 1 /nobreak >nul
@@ -143,16 +143,16 @@ echo [detypo] Waiting for backend...
 set /a _tries=0
 :wait_backend
 set /a _tries+=1
-if %_tries% gtr 30 (
-    echo [detypo] WARNING: Backend may not be ready (timeout)
-    goto :skip_backend_wait
-)
+if %_tries% gtr 30 goto :backend_timeout
 curl -s -o nul http://127.0.0.1:3000 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
     goto :wait_backend
 )
-:skip_backend_wait
+goto :backend_ready
+:backend_timeout
+echo [detypo] WARNING: Backend may not be ready
+:backend_ready
 echo [detypo] Backend ready
 
 :: Start frontend
@@ -164,31 +164,31 @@ echo [detypo] Waiting for frontend...
 set /a _tries=0
 :wait_frontend
 set /a _tries+=1
-if %_tries% gtr 30 (
-    echo [detypo] WARNING: Frontend may not be ready (timeout)
-    goto :skip_frontend_wait
-)
+if %_tries% gtr 30 goto :frontend_timeout
 curl -s -o nul http://127.0.0.1:4000 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
     goto :wait_frontend
 )
-:skip_frontend_wait
+goto :frontend_ready
+:frontend_timeout
+echo [detypo] WARNING: Frontend may not be ready
+:frontend_ready
 echo [detypo] Frontend ready
 
 echo.
 echo ======================================
-echo   Detypo is running
-echo   URL:  http://127.0.0.1:%FRONTEND_PORT%
+echo   Detypo is running (dev)
+echo   URL:  http://127.0.0.1:4000
 echo   Stop: detypo.bat stop
 echo ======================================
 echo.
-start "" "http://127.0.0.1:%FRONTEND_PORT%"
+start "" "http://127.0.0.1:4000"
 goto :eof
 
 
 :: ======================== STOP ========================
-:stop_all
+:do_stop
 echo [detypo] Stopping services...
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1

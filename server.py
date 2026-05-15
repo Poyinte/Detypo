@@ -372,4 +372,5 @@ if __name__ == "__main__":
                 subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True)
                 print(f"[startup] Killed old process PID {pid} on port {PORT}")
                 break
+    os.environ.setdefault("NO_COLOR", "1")  # Disable ANSI colors for CMD compatibility
     uvicorn.run("server:app", host=HOST, port=PORT, reload=True, reload_dirs=[str(Path(__file__).parent)])
