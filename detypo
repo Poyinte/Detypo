@@ -83,7 +83,7 @@ wait_for() {
 # ── Open browser ──
 open_browser() {
     info "Opening browser: $1"
-    cmd.exe /c start "" "$1" 2>/dev/null || xdg-open "$1" 2>/dev/null || open "$1" 2>/dev/null || true
+    powershell -Command "Start-Process '$1'" 2>/dev/null || xdg-open "$1" 2>/dev/null || open "$1" 2>/dev/null || true
 }
 
 # ── Install deps if needed ──
