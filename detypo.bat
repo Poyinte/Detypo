@@ -8,22 +8,16 @@ setlocal enabledelayedexpansion
 :: Usage:
 ::   detypo.bat             Prod mode (build, serve at :3000) [default]
 ::   detypo.bat dev          Dev mode (hot-reload, opens :4000)
-::   detypo.bat stop         Stop all services
+::   detypo.bat stop         Stop all services (dev mode)
 ::
-:: Close the window or press any key to stop all services automatically.
+:: Prod mode: server runs in this window. Ctrl+C or close window to stop.
+:: Dev mode:  services run in background. Use detypo.bat stop to stop.
 ::
 :: Requires: Python 3.10+, Node.js 18+
 :: =============================================================================
 
 set BACKEND_PORT=3000
 set FRONTEND_PORT=4000
-
-:: ---- Cleanup ----
-:cleanup
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-taskkill /F /IM node.exe >nul 2>&1
-goto :eof
 
 :: ---- Find Python ----
 set PYTHON=
@@ -53,7 +47,6 @@ if /i "%~1"=="stop"  goto :do_stop
 if /i "%~1"=="dev"   goto :do_dev
 goto :do_prod
 
-
 :: ======================== PROD MODE (default) ========================
 :do_prod
 echo [detypo] Detypo - Prod Mode
@@ -70,7 +63,7 @@ if %errorlevel% neq 0 (
     echo [detypo] Python deps ready
 )
 
-:: Install + build frontend
+:: Install and build frontend
 if not exist "frontend\node_modules\" (
     echo [detypo] Installing frontend dependencies...
     cd frontend
@@ -92,43 +85,21 @@ if %errorlevel% neq 0 (
 )
 echo [detypo] Frontend build done
 
-:: Kill port 3000 and start backend in background
+:: Kill existing process on port 3000
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 timeout /t 1 /nobreak >nul
-
-echo [detypo] Starting backend (127.0.0.1:3000)...
-start "DetypoBackend" /B %PYTHON% server.py > %TEMP%\detypo-backend.log 2>&1
-
-echo [detypo] Waiting for backend...
-set /a _tries=0
-:prod_wait_backend
-set /a _tries+=1
-if %_tries% gtr 30 goto :prod_backend_timeout
-curl -s -o nul http://127.0.0.1:3000 2>nul
-if %errorlevel% neq 0 (
-    timeout /t 1 /nobreak >nul
-    goto :prod_wait_backend
-)
-goto :prod_ready
-:prod_backend_timeout
-echo [detypo] WARNING: Backend may not be ready
-:prod_ready
-echo [detypo] Backend ready
 
 echo.
 echo ======================================
 echo   Detypo is running (prod)
 echo   URL:  http://127.0.0.1:3000
-echo.
-echo   [X]  Close this window to stop
-echo   [ ]  Or press any key to stop
+echo   Stop: Ctrl+C or close this window
 echo ======================================
 echo.
 start "" "http://127.0.0.1:3000"
 
-pause >nul
-echo [detypo] Shutting down...
-goto :cleanup
+%PYTHON% server.py
+goto :eof
 
 
 :: ======================== DEV MODE ========================
@@ -167,7 +138,7 @@ timeout /t 1 /nobreak >nul
 
 :: Start backend
 echo [detypo] Starting backend (127.0.0.1:3000)...
-start "DetypoBackend" /B %PYTHON% server.py > %TEMP%\detypo-backend.log 2>&1
+start "DetypoBackend" /B cmd /c "%PYTHON% server.py > %TEMP%\detypo-backend-%RANDOM%.log 2>&1"
 
 :: Wait for backend
 echo [detypo] Waiting for backend...
@@ -211,19 +182,18 @@ echo.
 echo ======================================
 echo   Detypo is running (dev)
 echo   URL:  http://127.0.0.1:4000
-echo.
-echo   [X]  Close this window to stop
-echo   [ ]  Or press any key to stop
+echo   Stop: detypo.bat stop
 echo ======================================
 echo.
 start "" "http://127.0.0.1:4000"
-
-pause >nul
-echo [detypo] Shutting down...
-goto :cleanup
+goto :eof
 
 
-:: ======================== STOP (from command line) ========================
+:: ======================== STOP ========================
 :do_stop
 echo [detypo] Stopping services...
-goto :cleanup
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+taskkill /F /IM node.exe >nul 2>&1
+echo [detypo] Stopped
+goto :eof
