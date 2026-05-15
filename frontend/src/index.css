@@ -1,0 +1,285 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.145 0 0);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.145 0 0);
+  --color-primary: oklch(0.546 0.245 262.881);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --color-secondary: oklch(0.965 0.01 260);
+  --color-secondary-foreground: oklch(0.205 0 0);
+  --color-muted: oklch(0.965 0.005 260);
+  --color-muted-foreground: oklch(0.556 0 0);
+  --color-accent: oklch(0.95 0.015 260);
+  --color-accent-foreground: oklch(0.205 0 0);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-border: oklch(0.922 0.005 260);
+  --color-input: oklch(0.922 0.005 260);
+  --color-ring: oklch(0.546 0.245 262.881);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.145 0 0);
+  --color-chart-1: oklch(0.646 0.222 41.116);
+  --color-chart-2: oklch(0.6 0.118 184.704);
+  --color-chart-3: oklch(0.398 0.07 227.392);
+  --color-chart-4: oklch(0.828 0.189 84.429);
+  --color-chart-5: oklch(0.769 0.188 70.08);
+  --color-sidebar: oklch(0.985 0 0);
+  --color-sidebar-foreground: oklch(0.145 0 0);
+  --color-sidebar-primary: oklch(0.546 0.245 262.881);
+  --color-sidebar-primary-foreground: oklch(0.985 0 0);
+  --color-sidebar-accent: oklch(0.95 0.015 260);
+  --color-sidebar-accent-foreground: oklch(0.205 0 0);
+  --color-sidebar-border: oklch(0.922 0.005 260);
+  --color-sidebar-ring: oklch(0.546 0.245 262.881);
+  --radius: 0.375rem;
+}
+
+.dark {
+  --color-background: oklch(0.145 0 0);
+  --color-foreground: oklch(0.985 0 0);
+  --color-card: oklch(0.145 0 0);
+  --color-card-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0.7 0.18 260);
+  --color-primary-foreground: oklch(0.145 0 0);
+  --color-secondary: oklch(0.269 0.01 260);
+  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-muted: oklch(0.269 0.005 260);
+  --color-muted-foreground: oklch(0.708 0 0);
+  --color-accent: oklch(0.269 0.015 260);
+  --color-accent-foreground: oklch(0.985 0 0);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-border: oklch(0.269 0.01 260);
+  --color-input: oklch(0.269 0.01 260);
+  --color-ring: oklch(0.488 0.243 264.376);
+  --color-popover: oklch(0.145 0 0);
+  --color-popover-foreground: oklch(0.985 0 0);
+  --color-chart-1: oklch(0.488 0.243 264.376);
+  --color-chart-2: oklch(0.696 0.17 162.48);
+  --color-chart-3: oklch(0.769 0.188 70.08);
+  --color-chart-4: oklch(0.627 0.265 303.9);
+  --color-chart-5: oklch(0.645 0.246 16.439);
+  --color-sidebar: oklch(0.205 0 0);
+  --color-sidebar-foreground: oklch(0.985 0 0);
+  --color-sidebar-primary: oklch(0.488 0.243 264.376);
+  --color-sidebar-primary-foreground: oklch(0.985 0 0);
+  --color-sidebar-accent: oklch(0.269 0.015 260);
+  --color-sidebar-accent-foreground: oklch(0.985 0 0);
+  --color-sidebar-border: oklch(0.269 0.01 260);
+  --color-sidebar-ring: oklch(0.488 0.243 264.376);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html, body, #root {
+  overflow: clip;
+  height: 100%;
+}
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+  user-select: none;
+}
+
+/* Hide scrollbars on ALL elements except the intended scroll container */
+* {
+  scrollbar-width: none !important;
+}
+*::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Only custom-scroll gets a visible scrollbar */
+[data-slot="custom-scroll"] {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: oklch(0.556 0 0 / 0.3) transparent;
+}
+[data-slot="custom-scroll"]::-webkit-scrollbar {
+  display: block !important;
+  width: 6px;
+}
+[data-slot="custom-scroll"]::-webkit-scrollbar-thumb {
+  background: oklch(0.556 0 0 / 0.3);
+  border-radius: 3px;
+}
+.dark [data-slot="custom-scroll"] {
+  scrollbar-color: oklch(1 0 0 / 0.15) transparent;
+}
+.dark [data-slot="custom-scroll"]::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 0.15);
+}
+
+/* Bridge Radix data-state=active to shadcn data-active styles */
+[data-slot="tabs-trigger"][data-state="active"] {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+[data-slot="tabs-trigger"][data-state="active"]::after {
+  opacity: 1;
+}
+
+/* Bridge Radix data-state=checked to shadcn data-checked styles */
+/* Fix checkbox — override dark-mode invisible border-input */
+[data-slot="checkbox"] {
+  border-color: var(--color-muted-foreground) !important;
+}
+[data-slot="checkbox"][data-state="checked"] {
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-primary) !important;
+  color: white !important;
+}
+
+/* ── Animations ── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-up-scale {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.25s ease-out both;
+}
+.animate-fade-in-up-scale {
+  animation: fade-in-up-scale 0.25s ease-out both;
+}
+@keyframes fade-out-down {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(6px); }
+}
+.animate-fade-out-down {
+  animation: fade-out-down 0.2s ease-in both;
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+/* Slider */
+[data-slot="slider-track"] {
+  background: oklch(0 0 0 / 0.1);
+}
+[data-slot="slider-range"] {
+  background: var(--color-primary);
+}
+.dark [data-slot="slider-track"] {
+  background: oklch(1 0 0 / 0.15);
+}
+
+/* Smooth opacity transition for exclude/restore */
+[data-slot="table-row"] {
+  transition: opacity 0.25s ease, background-color 0.3s ease;
+}
+
+/* Dedicated row entrance — avoids Tailwind animate-in scroll-driven quirks */
+.table-row-enter {
+  animation: fade-in-up 0.25s ease-out both;
+}
+.table-row-enter-dim {
+  animation: fade-in-up-dim 0.25s ease-out both;
+}
+@keyframes fade-in-up-dim {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 0.4; transform: translateY(0); }
+}
+
+/* Menu/Popover animations via direct CSS (Tailwind v4 data-[state] variant not generating) */
+/* ---- open ---- */
+[data-slot="dropdown-menu-content"][data-state="open"],
+[data-slot="popover-content"][data-state="open"],
+[data-slot="context-menu-content"][data-state="open"],
+[data-slot="dropdown-menu-sub-content"][data-state="open"],
+[data-slot="context-menu-sub-content"][data-state="open"] {
+  animation: fade-in-up 0.15s ease-out both;
+}
+[data-slot="alert-dialog-content"][data-state="open"] {
+  animation: fade-in-up-scale 0.2s ease-out both;
+}
+/* ---- closed ---- */
+[data-slot="dropdown-menu-content"][data-state="closed"],
+[data-slot="popover-content"][data-state="closed"],
+[data-slot="context-menu-content"][data-state="closed"],
+[data-slot="dropdown-menu-sub-content"][data-state="closed"],
+[data-slot="context-menu-sub-content"][data-state="closed"] {
+  animation: fade-out 0.1s ease-in both;
+}
+[data-slot="alert-dialog-content"][data-state="closed"] {
+  animation: fade-out 0.15s ease-in both;
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Popover slides up from bottom */
+[data-slot="popover-content"][data-state="open"] {
+  animation: slide-up-fade 0.2s ease-out both;
+}
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Ensure input focus ring is always visible */
+[data-slot="input"]:focus-visible {
+  border-color: var(--color-ring) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 50%, transparent) !important;
+}
+
+/* Disable text selection during drag */
+body.dragging-table {
+  user-select: none;
+}
+
+/* Alert dialog & Dialog overlays — fade + blur */
+[data-slot="alert-dialog-overlay"][data-state="open"],
+[data-slot="dialog-overlay"][data-state="open"] {
+  animation: fade-blur-in 0.2s ease-out both;
+}
+[data-slot="alert-dialog-overlay"][data-state="closed"],
+[data-slot="dialog-overlay"][data-state="closed"] {
+  animation: fade-blur-out 0.15s ease-in both;
+}
+[data-slot="alert-dialog-content"][data-state="open"],
+[data-slot="dialog-content"][data-state="open"] {
+  animation: fade-in-up-scale 0.2s ease-out both;
+}
+[data-slot="alert-dialog-content"][data-state="closed"],
+[data-slot="dialog-content"][data-state="closed"] {
+  animation: fade-out 0.15s ease-in both;
+}
+@keyframes fade-blur-in {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(2px); }
+}
+@keyframes fade-blur-out {
+  from { opacity: 1; backdrop-filter: blur(2px); }
+  to { opacity: 0; backdrop-filter: blur(0px); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Select content animations */
+[data-slot="select-content"][data-state="open"] {
+  animation: fade-in-up 0.15s ease-out both;
+}
+[data-slot="select-content"][data-state="closed"] {
+  animation: fade-out 0.1s ease-in both;
+}
+
+
