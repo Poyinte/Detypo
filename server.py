@@ -376,4 +376,6 @@ if __name__ == "__main__":
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["formatters"]["default"]["use_colors"] = False
     log_config["formatters"]["access"]["use_colors"] = False
-    uvicorn.run("server:app", host=HOST, port=PORT, reload=True, log_config=log_config, reload_dirs=[str(Path(__file__).parent)])
+    # Prod mode: single process (no reload worker that survives window close)
+    use_reload = os.getenv("DETYPO_PROD", "0") != "1"
+    uvicorn.run("server:app", host=HOST, port=PORT, reload=use_reload, log_config=log_config, reload_dirs=[str(Path(__file__).parent)])

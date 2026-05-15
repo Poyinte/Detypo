@@ -98,6 +98,7 @@ echo ======================================
 echo.
 start "" "http://127.0.0.1:3000"
 
+set DETYPO_PROD=1
 %PYTHON% server.py
 echo.
 echo [detypo] Server stopped. Cleaning up...
