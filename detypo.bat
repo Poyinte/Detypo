@@ -95,6 +95,7 @@ echo   Stop: Ctrl+C
 echo ======================================
 echo.
 start "" "http://127.0.0.1:%BACKEND_PORT%"
+set NO_COLOR=1
 %PYTHON% server.py
 goto :eof
 
