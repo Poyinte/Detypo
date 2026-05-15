@@ -86,7 +86,7 @@ if %errorlevel% neq 0 (
 echo [detypo] Frontend build done
 
 :: Kill existing process on port 3000
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 echo.
@@ -132,7 +132,7 @@ if not exist "frontend\node_modules\" (
 )
 
 :: Kill ports
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 timeout /t 1 /nobreak >nul
 
@@ -192,8 +192,9 @@ goto :eof
 :: ======================== STOP ========================
 :do_stop
 echo [detypo] Stopping services...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+taskkill /F /IM python.exe >nul 2>&1
 taskkill /F /IM node.exe >nul 2>&1
 echo [detypo] Stopped
 goto :eof
