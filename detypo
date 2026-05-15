@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# detypo — 得误 Detypo PDF 校对助手 一键启动脚本
+# detypo — Detypo PDF Proofreader one-click launcher
 # =============================================================================
-# 用法:
-#   ./detypo             生产模式（构建前端，后端统一服务）默认
-#   ./detypo dev          开发模式（前后端分别启动，热重载）
-#   ./detypo stop         停止所有 detypo 进程
+# Usage:
+#   ./detypo              Prod mode (build, serve at :3000) [default]
+#   ./detypo dev           Dev mode (hot-reload, opens :4000)
+#   ./detypo stop          Stop all services
 #
-# 首次运行会自动安装依赖。需要 Python 3.10+ 和 Node.js 18+。
-# 服务就绪后自动打开浏览器访问 http://127.0.0.1:4000
-#
-# 支持: Windows (Git Bash) / macOS / Linux
+# Requires: Python 3.10+, Node.js 18+
 # =============================================================================
 
-# ── 自定位到脚本所在目录 ──
+set -e
+
+# ── CD to script directory ──
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
@@ -28,11 +27,11 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 info()  { echo -e "${CYAN}[detypo]${NC} $1"; }
-ok()    { echo -e "${GREEN}[detypo]${NC} ✓ $1"; }
-warn()  { echo -e "${YELLOW}[detypo]${NC} ⚠ $1"; }
-err()   { echo -e "${RED}[detypo]${NC} ✗ $1"; }
+ok()    { echo -e "${GREEN}[detypo]${NC} $1"; }
+warn()  { echo -e "${YELLOW}[detypo]${NC} $1"; }
+err()   { echo -e "${RED}[detypo]${NC} $1"; }
 
-# ── 检测 Python ──
+# ── Find Python ──
 PYTHON=""
 for c in python python3; do
     if command -v "$c" &>/dev/null && "$c" --version &>/dev/null 2>&1; then
@@ -41,22 +40,14 @@ for c in python python3; do
     fi
 done
 if [ -z "$PYTHON" ]; then
-    err "未找到 Python，请安装 Python 3.10+"
+    err "Python not found. Please install Python 3.10+"
     exit 1
 fi
 
-# ── 端口处理 ──
+# ── Kill port (Windows + Unix) ──
 kill_port() {
     local port=$1 pid
-    # Kill by known PID file first
-    if [ -f "/tmp/detypo-port-${port}.pid" ]; then
-        pid=$(cat "/tmp/detypo-port-${port}.pid" 2>/dev/null)
-        if [ -n "$pid" ]; then
-            taskkill //PID "$pid" //F //T >/dev/null 2>&1 || true
-            rm -f "/tmp/detypo-port-${port}.pid"
-        fi
-    fi
-    # Then kill anything still on the port
+    # Windows
     local pids
     pids=$(netstat -ano 2>/dev/null | grep ":${port} " | grep "LISTENING" | awk '{print $NF}' | sort -u)
     for pid in $pids; do
@@ -64,120 +55,137 @@ kill_port() {
         [ "$pid" = "0" ] && continue
         taskkill //PID "$pid" //F //T >/dev/null 2>&1 || true
     done
+    # Unix
+    if command -v lsof &>/dev/null; then
+        pid=$(lsof -ti :"${port}" 2>/dev/null)
+        [ -n "$pid" ] && kill -9 "$pid" 2>/dev/null || true
+    fi
     sleep 0.3
 }
 
-# ── 等待服务就绪 ──
+# ── Wait for service ──
 wait_for() {
     local url=$1 name=$2 max=${3:-30} i=0 code
-    info "等待 ${name} 就绪..."
+    info "Waiting for ${name}..."
     while [ $i -lt $max ]; do
         code=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
         if [ "$code" != "000" ]; then
-            ok "${name} 已就绪"
+            ok "${name} ready"
             return 0
         fi
         sleep 1
         i=$((i + 1))
     done
-    warn "${name} 可能未就绪 (超时)"
+    warn "${name} may not be ready (timeout)"
     return 1
 }
 
-# ── 打开浏览器 ──
+# ── Open browser ──
 open_browser() {
-    info "打开浏览器 $1 ..."
+    info "Opening browser: $1"
     cmd.exe /c start "$1" 2>/dev/null || xdg-open "$1" 2>/dev/null || open "$1" 2>/dev/null || true
+}
+
+# ── Install deps if needed ──
+ensure_deps() {
+    if ! "$PYTHON" -c "import fastapi, uvicorn, pymupdf, requests, pydantic" 2>/dev/null; then
+        info "Installing Python dependencies..."
+        pip install -r requirements.txt >/dev/null 2>&1 || {
+            err "Python dep install failed. Check network."
+            exit 1
+        }
+        ok "Python deps ready"
+    fi
+    if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+        info "Installing frontend dependencies..."
+        (cd "$FRONTEND_DIR" && npm install --silent) || {
+            err "Frontend dep install failed. Check network."
+            exit 1
+        }
+        ok "Frontend deps ready"
+    fi
+}
+
+# ── Cleanup ──
+cleanup() {
+    kill_port $BACKEND_PORT
+    kill_port $FRONTEND_PORT
+    taskkill //F //IM python.exe >/dev/null 2>&1 || true
+    taskkill //F //IM node.exe >/dev/null 2>&1 || true
 }
 
 # ── stop ──
 do_stop() {
-    info "停止服务..."
-    kill_port $BACKEND_PORT
-    kill_port $FRONTEND_PORT
-    ok "已停止"
+    info "Stopping services..."
+    cleanup
+    ok "Stopped"
 }
 
-# ── 安装依赖 (如果需要) ──
-ensure_deps() {
-    # Python dep check: try importing key packages
-    if ! "$PYTHON" -c "import fastapi, uvicorn, pymupdf, requests, pydantic" 2>/dev/null; then
-        info "安装 Python 依赖..."
-        pip install -r requirements.txt >/dev/null 2>&1 || {
-            err "Python 依赖安装失败，请检查网络后重试"
-            exit 1
-        }
-        ok "Python 依赖就绪"
-    fi
-    # Frontend dep check
-    if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
-        info "安装前端依赖..."
-        (cd "$FRONTEND_DIR" && npm install --silent) || {
-            err "前端依赖安装失败，请检查网络后重试"
-            exit 1
-        }
-        ok "前端依赖就绪"
-    fi
-}
-
-# ── 开发模式 ──
-do_dev() {
-    info "得误 Detypo — 开发模式"
+# ── Prod mode ──
+do_prod() {
+    info "Detypo - Prod Mode"
     ensure_deps
-    do_stop 2>/dev/null
+    cleanup 2>/dev/null
     sleep 0.5
 
-    info "启动后端 (127.0.0.1:${BACKEND_PORT})..."
-    "$PYTHON" server.py > /tmp/detypo-backend.log 2>&1 &
-    echo $! > /tmp/detypo-port-${BACKEND_PORT}.pid
-    wait_for "http://127.0.0.1:${BACKEND_PORT}" "后端" 20
-
-    info "启动前端 (127.0.0.1:${FRONTEND_PORT})..."
-    (cd "$FRONTEND_DIR" && npm run dev > /tmp/detypo-frontend.log 2>&1) &
-    echo $! > /tmp/detypo-port-${FRONTEND_PORT}.pid
-    wait_for "http://127.0.0.1:${FRONTEND_PORT}" "前端" 20
+    info "Building frontend..."
+    (cd "$FRONTEND_DIR" && npm run build) || { err "Frontend build failed"; exit 1; }
+    ok "Frontend build done"
 
     echo ""
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}  得误 Detypo 已启动 ✨${NC}"
-    echo -e "${GREEN}  地址: http://127.0.0.1:${FRONTEND_PORT}${NC}"
-    echo -e "${GREEN}  停止: ./detypo stop${NC}"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}======================================${NC}"
+    echo -e "${GREEN}  Detypo is running (prod)${NC}"
+    echo -e "${GREEN}  URL:  http://127.0.0.1:${BACKEND_PORT}${NC}"
+    echo -e "${GREEN}  Stop: Ctrl+C or close this window${NC}"
+    echo -e "${GREEN}======================================${NC}"
+    echo ""
+    open_browser "http://127.0.0.1:${BACKEND_PORT}"
+
+    export DETYPO_PROD=1
+    "$PYTHON" server.py
+    echo ""
+    info "Server stopped. Cleaning up..."
+    cleanup
+    ok "Done"
+}
+
+# ── Dev mode ──
+do_dev() {
+    info "Detypo - Dev Mode"
+    ensure_deps
+    cleanup 2>/dev/null
+    sleep 0.5
+
+    info "Starting backend (127.0.0.1:${BACKEND_PORT})..."
+    "$PYTHON" server.py > /tmp/detypo-backend.log 2>&1 &
+    echo $! > /tmp/detypo-port-${BACKEND_PORT}.pid
+    wait_for "http://127.0.0.1:${BACKEND_PORT}" "Backend" 20
+
+    info "Starting frontend (127.0.0.1:${FRONTEND_PORT})..."
+    (cd "$FRONTEND_DIR" && npm run dev > /tmp/detypo-frontend.log 2>&1) &
+    echo $! > /tmp/detypo-port-${FRONTEND_PORT}.pid
+    wait_for "http://127.0.0.1:${FRONTEND_PORT}" "Frontend" 20
+
+    echo ""
+    echo -e "${GREEN}======================================${NC}"
+    echo -e "${GREEN}  Detypo is running (dev)${NC}"
+    echo -e "${GREEN}  URL:  http://127.0.0.1:${FRONTEND_PORT}${NC}"
+    echo -e "${GREEN}  Stop: ./detypo stop${NC}"
+    echo -e "${GREEN}======================================${NC}"
     echo ""
     open_browser "http://127.0.0.1:${FRONTEND_PORT}"
 }
 
-# ── 生产模式 ──
-do_prod() {
-    info "得误 Detypo — 生产模式"
-    ensure_deps
-    do_stop 2>/dev/null
-    sleep 0.5
-
-    info "构建前端..."
-    (cd "$FRONTEND_DIR" && npm run build) || { err "前端构建失败"; exit 1; }
-    ok "前端构建完成"
-
-    echo ""
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}  得误 Detypo 已启动 (生产)${NC}"
-    echo -e "${GREEN}  地址: http://127.0.0.1:${BACKEND_PORT}${NC}"
-    echo -e "${GREEN}  停止: Ctrl+C${NC}"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    "$PYTHON" server.py
-}
-
-# ── 入口 ──
+# ── Entry ──
 case "${1:-prod}" in
     dev)  do_dev ;;
     prod) do_prod ;;
     stop) do_stop ;;
     *)
-        echo "用法: ./detypo {prod|dev|stop}"
-        echo "  prod  生产模式（默认）— 构建前端后统一服务，浏览器访问 :3000"
-        echo "  dev   开发模式 — 前后端热重载，浏览器访问 :4000"
-        echo "  stop  停止所有服务"
+        echo "Usage: ./detypo {prod|dev|stop}"
+        echo "  prod  Prod mode (default) — build and serve at :3000"
+        echo "  dev   Dev mode — hot-reload, opens :4000"
+        echo "  stop  Stop all services"
         exit 1
         ;;
 esac
