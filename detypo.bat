@@ -99,6 +99,13 @@ echo.
 start "" "http://127.0.0.1:3000"
 
 %PYTHON% server.py
+echo.
+echo [detypo] Server stopped. Cleaning up...
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+taskkill /F /IM python.exe >nul 2>&1
+taskkill /F /IM node.exe >nul 2>&1
+echo [detypo] Done
 goto :eof
 
 
