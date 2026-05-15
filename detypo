@@ -3,8 +3,8 @@
 # detypo — 得误 Detypo PDF 校对助手 一键启动脚本
 # =============================================================================
 # 用法:
-#   ./detypo             开发模式（前后端分别启动，热重载）
-#   ./detypo prod         生产模式（构建前端，后端统一服务）
+#   ./detypo             生产模式（构建前端，后端统一服务）默认
+#   ./detypo dev          开发模式（前后端分别启动，热重载）
 #   ./detypo stop         停止所有 detypo 进程
 #
 # 首次运行会自动安装依赖。需要 Python 3.10+ 和 Node.js 18+。
@@ -169,14 +169,14 @@ do_prod() {
 }
 
 # ── 入口 ──
-case "${1:-dev}" in
+case "${1:-prod}" in
     dev)  do_dev ;;
     prod) do_prod ;;
     stop) do_stop ;;
     *)
-        echo "用法: ./detypo {dev|prod|stop}"
-        echo "  dev   开发模式（默认）— 前后端热重载，浏览器访问 :4000"
-        echo "  prod  生产模式 — 构建前端后统一服务，浏览器访问 :3000"
+        echo "用法: ./detypo {prod|dev|stop}"
+        echo "  prod  生产模式（默认）— 构建前端后统一服务，浏览器访问 :3000"
+        echo "  dev   开发模式 — 前后端热重载，浏览器访问 :4000"
         echo "  stop  停止所有服务"
         exit 1
         ;;
