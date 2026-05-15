@@ -10,11 +10,20 @@ setlocal enabledelayedexpansion
 ::   detypo.bat dev          Dev mode (hot-reload, opens :4000)
 ::   detypo.bat stop         Stop all services
 ::
+:: Close the window or press any key to stop all services automatically.
+::
 :: Requires: Python 3.10+, Node.js 18+
 :: =============================================================================
 
 set BACKEND_PORT=3000
 set FRONTEND_PORT=4000
+
+:: ---- Cleanup ----
+:cleanup
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+taskkill /F /IM node.exe >nul 2>&1
+goto :eof
 
 :: ---- Find Python ----
 set PYTHON=
@@ -44,6 +53,7 @@ if /i "%~1"=="stop"  goto :do_stop
 if /i "%~1"=="dev"   goto :do_dev
 goto :do_prod
 
+
 :: ======================== PROD MODE (default) ========================
 :do_prod
 echo [detypo] Detypo - Prod Mode
@@ -60,7 +70,7 @@ if %errorlevel% neq 0 (
     echo [detypo] Python deps ready
 )
 
-:: Install frontend deps
+:: Install + build frontend
 if not exist "frontend\node_modules\" (
     echo [detypo] Installing frontend dependencies...
     cd frontend
@@ -72,8 +82,6 @@ if not exist "frontend\node_modules\" (
     )
     echo [detypo] Frontend deps ready
 )
-
-:: Build frontend
 echo [detypo] Building frontend...
 cd frontend
 call npm run build
@@ -84,20 +92,43 @@ if %errorlevel% neq 0 (
 )
 echo [detypo] Frontend build done
 
-:: Kill port 3000
+:: Kill port 3000 and start backend in background
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 timeout /t 1 /nobreak >nul
+
+echo [detypo] Starting backend (127.0.0.1:3000)...
+start "DetypoBackend" /B %PYTHON% server.py > %TEMP%\detypo-backend.log 2>&1
+
+echo [detypo] Waiting for backend...
+set /a _tries=0
+:prod_wait_backend
+set /a _tries+=1
+if %_tries% gtr 30 goto :prod_backend_timeout
+curl -s -o nul http://127.0.0.1:3000 2>nul
+if %errorlevel% neq 0 (
+    timeout /t 1 /nobreak >nul
+    goto :prod_wait_backend
+)
+goto :prod_ready
+:prod_backend_timeout
+echo [detypo] WARNING: Backend may not be ready
+:prod_ready
+echo [detypo] Backend ready
 
 echo.
 echo ======================================
 echo   Detypo is running (prod)
 echo   URL:  http://127.0.0.1:3000
-echo   Stop: Ctrl+C
+echo.
+echo   [X]  Close this window to stop
+echo   [ ]  Or press any key to stop
 echo ======================================
 echo.
 start "" "http://127.0.0.1:3000"
-%PYTHON% server.py
-goto :eof
+
+pause >nul
+echo [detypo] Shutting down...
+goto :cleanup
 
 
 :: ======================== DEV MODE ========================
@@ -141,18 +172,18 @@ start "DetypoBackend" /B %PYTHON% server.py > %TEMP%\detypo-backend.log 2>&1
 :: Wait for backend
 echo [detypo] Waiting for backend...
 set /a _tries=0
-:wait_backend
+:dev_wait_backend
 set /a _tries+=1
-if %_tries% gtr 30 goto :backend_timeout
+if %_tries% gtr 30 goto :dev_backend_timeout
 curl -s -o nul http://127.0.0.1:3000 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
-    goto :wait_backend
+    goto :dev_wait_backend
 )
-goto :backend_ready
-:backend_timeout
+goto :dev_backend_ready
+:dev_backend_timeout
 echo [detypo] WARNING: Backend may not be ready
-:backend_ready
+:dev_backend_ready
 echo [detypo] Backend ready
 
 :: Start frontend
@@ -162,36 +193,37 @@ start "DetypoFrontend" /B cmd /c "cd /d %CD%\frontend && npm run dev > %TEMP%\de
 :: Wait for frontend
 echo [detypo] Waiting for frontend...
 set /a _tries=0
-:wait_frontend
+:dev_wait_frontend
 set /a _tries+=1
-if %_tries% gtr 30 goto :frontend_timeout
+if %_tries% gtr 30 goto :dev_frontend_timeout
 curl -s -o nul http://127.0.0.1:4000 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
-    goto :wait_frontend
+    goto :dev_wait_frontend
 )
-goto :frontend_ready
-:frontend_timeout
+goto :dev_frontend_ready
+:dev_frontend_timeout
 echo [detypo] WARNING: Frontend may not be ready
-:frontend_ready
+:dev_frontend_ready
 echo [detypo] Frontend ready
 
 echo.
 echo ======================================
 echo   Detypo is running (dev)
 echo   URL:  http://127.0.0.1:4000
-echo   Stop: detypo.bat stop
+echo.
+echo   [X]  Close this window to stop
+echo   [ ]  Or press any key to stop
 echo ======================================
 echo.
 start "" "http://127.0.0.1:4000"
-goto :eof
+
+pause >nul
+echo [detypo] Shutting down...
+goto :cleanup
 
 
-:: ======================== STOP ========================
+:: ======================== STOP (from command line) ========================
 :do_stop
 echo [detypo] Stopping services...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-taskkill /F /IM node.exe >nul 2>&1
-echo [detypo] Stopped
-goto :eof
+goto :cleanup
