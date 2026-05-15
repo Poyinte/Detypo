@@ -19,45 +19,56 @@
 
 ## 快速开始
 
-### 1. 获取代码
+### Docker（推荐）
 
 ```bash
-git clone <repo-url>
-cd detypo
+docker run -p 3000:3000 poyinte/detypo
 ```
 
-### 2. 配置 API Key
+带 API Key：
+```bash
+docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
+```
+
+然后访问 http://localhost:3000。API Key 也可以在界面中输入。
+
+### Windows 本地运行
 
 ```bash
-cp .env.example .env
-# 编辑 .env 填入你的 DeepSeek API Key
+git clone git@github.com:Poyinte/Detypo.git
+cd Detypo
+
+# 双击 detypo.bat（生产模式，构建前端后统一服务）
+# 或在 CMD 中：
+detypo.bat              # 生产模式（默认）
+detypo.bat dev          # 开发模式（热重载）
+detypo.bat stop         # 停止后台服务
 ```
 
-或者首次启动后在界面的「API 设置」中输入，会自动保存到浏览器本地存储。
-
-### 3. 一键启动
+### macOS / Linux 本地运行
 
 ```bash
-./detypo          # 开发模式（热重载，推荐）
-./detypo prod     # 生产模式（构建前端后统一服务）
-./detypo stop     # 停止所有服务
+git clone git@github.com:Poyinte/Detypo.git
+cd Detypo
+chmod +x detypo
+
+./detypo                # 生产模式（默认）
+./detypo dev            # 开发模式（热重载）
+./detypo stop           # 停止后台服务
 ```
 
-首次运行会自动安装依赖。服务就绪后自动打开浏览器。
+首次运行会自动安装依赖，服务就绪后自动打开浏览器。
 
 ### 手动启动
 
 ```bash
-# 安装 Python 依赖
 pip install -r requirements.txt
-
-# 安装前端依赖 & 构建
 cd frontend && npm install && npm run build && cd ..
-
-# 启动服务
 python server.py
 # 访问 http://127.0.0.1:3000
 ```
+
+API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入（保存在浏览器本地存储）。
 
 ## 技术栈
 
