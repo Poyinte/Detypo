@@ -5,9 +5,9 @@
 </div>
 <br>
 <div align="center">
-<p>
-<img src="./frontend/public/logo.svg" height="120" align="center" style="background:#fff;border-radius:12px;padding:8px">
-</p>
+<table><tr><td bgcolor="white">
+<img src="./frontend/public/logo.svg" height="120" align="center">
+</td></tr></table>
 
 中文 PDF 校对工具 — 调用 DeepSeek API 自动校对错别字、标点、用语与禁用词
 <br>
@@ -23,7 +23,7 @@
 
 ---
 
-# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/zap.svg" height="28" align="absmiddle"> 功能特性
+# :zap: 功能特性
 
 - **上传 PDF** — 支持拖拽或点击选择，支持选择校对页码范围
 - **校对类型** — 用字错误、用词不当、语法错误、标点符号、数字用法、政治敏感
@@ -35,7 +35,7 @@
 
 ---
 
-# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/rocket.svg" height="28" align="absmiddle"> 快速开始
+# :rocket: 快速开始
 
 ## Docker（推荐）
 
@@ -106,7 +106,7 @@ API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入。
 
 ---
 
-# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/layers.svg" height="28" align="absmiddle"> 技术栈
+# :hammer_and_wrench: 技术栈
 
 <div align="center">
 
@@ -122,7 +122,7 @@ API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入。
 
 ---
 
-# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/shield-check.svg" height="28" align="absmiddle"> 许可证与法律声明
+# :shield: 许可证与法律声明
 
 ## 许可证
 
