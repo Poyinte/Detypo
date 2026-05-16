@@ -21,6 +21,7 @@ jobs:
         with:
           images: poyinte/detypo
           tags: |
+            type=raw,value=latest
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
