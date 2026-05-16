@@ -24,7 +24,7 @@
 
 ---
 
-# :zap: 功能特性
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 功能特性
 
 - **上传 PDF** — 支持拖拽或点击选择，支持选择校对页码范围
 - **校对类型** — 用字错误、用词不当、语法错误、标点符号、数字用法、政治敏感
@@ -36,7 +36,7 @@
 
 ---
 
-# :rocket: 快速开始
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/rocket-dark.svg"><img src="./docs/icons/rocket.svg" height="28" align="absmiddle"></picture> 快速开始
 
 ## Docker（推荐）
 
@@ -107,7 +107,7 @@ API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入。
 
 ---
 
-# :hammer_and_wrench: 技术栈
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 技术栈
 
 <div align="center">
 
@@ -123,7 +123,7 @@ API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入。
 
 ---
 
-# :shield: 许可证与法律声明
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/shield-check-dark.svg"><img src="./docs/icons/shield-check.svg" height="28" align="absmiddle"></picture> 许可证与法律声明
 
 ## 许可证
 
