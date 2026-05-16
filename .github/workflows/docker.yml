@@ -40,3 +40,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: poyinte
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: poyinte/detypo
+          readme-filepath: docs/docker-hub.md
