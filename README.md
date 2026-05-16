@@ -81,8 +81,6 @@ detypo.bat dev          # 开发模式（热重载），浏览器打开 :4000
 detypo.bat stop         # 停止后台服务
 ```
 
-首次运行会自动安装 Python 和前端依赖。
-
 ## macOS / Linux
 
 ```bash
@@ -94,8 +92,6 @@ chmod +x detypo
 ./detypo dev            # 开发模式（热重载）
 ./detypo stop           # 停止后台服务
 ```
-
-首次运行会自动安装 Python 和前端依赖。
 
 ## 手动安装
 
