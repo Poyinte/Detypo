@@ -1,5 +1,3 @@
-</div>
-<br>
 <div align="center">
 <p>
 <picture>
@@ -102,8 +100,6 @@ cd frontend && npm install && npm run build && cd ..
 python server.py
 # 访问 http://127.0.0.1:3000
 ```
-
-</div>
 
 ---
 
