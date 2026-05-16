@@ -1,7 +1,3 @@
-<div align="left">
-
-  [![AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)](https://www.gnu.org/licenses/agpl-3.0.html)
-
 </div>
 <br>
 <div align="center">
@@ -12,37 +8,42 @@
 </picture>
 </p>
 
-中文 PDF 校对工具 — 调用 DeepSeek API 自动校对错别字、标点、用语与禁用词
-<br>
-<sub>Made with <code>FastAPI + React + shadcn/ui</code></sub>
+中文 PDF 校对工具 —— 调用 AI 自动识别常见错误<br>
+<sub>Made with <code>DeepSeek-V4</code></sub>
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/poyinte/detypo?style=flat-square&logo=docker&label=Docker%20Pulls&color=0db7ed)](https://hub.docker.com/r/poyinte/detypo) [![GitHub Stars](https://img.shields.io/github/stars/Poyinte/Detypo?style=flat-square&logo=github)](https://github.com/Poyinte/Detypo/stargazers) [![Issues](https://img.shields.io/github/issues/Poyinte/Detypo?style=flat-square&logo=github)](https://github.com/Poyinte/Detypo/issues)
+[![AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)](https://www.gnu.org/licenses/agpl-3.0.html)
+![Python](https://img.shields.io/badge/-Python_3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
+![Node.js](https://img.shields.io/badge/-Node.js_18+-339933?style=flat-square&logo=node.js&logoColor=white)
 </div>
 <br><br>
 <div align="right">
-<sub>* 校对结果可能存在错漏，投入使用前请进行人工复核。</sub><br>
-<sub>** API Key 存储在浏览器本地，不会上传至任何服务器。</sub>
+<sub>* 校对结果可能存在错漏，投入使用前请进行人工复核。</sub>
 </div>
 
 ---
 
-# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 为什么选择 Detypo
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 基本功能
 
-- **本地运行，数据安全** — 文件处理和 AI 调用均在本地完成（或你的 Docker 容器中），不上传至第三方
-- **自带 API Key** — 使用你自己的 DeepSeek API Key，费用透明可控，无需订阅
-- **Token 估算** — 开始校对前预估 token 用量和费用，避免意外开销
-- **SSE 实时进度** — 校对过程通过 Server-Sent Events 流式推送，日志级粒度
-- **双视图** — 列表视图适合批量审查，卡片视图适合逐条阅读
-- **单文件部署** — Docker 一行命令即可启动，Windows 双击 bat 即用
+- **快速校对** — 调用 `deepseek-v4-flash` 进行校对，快速发现错误
+- **错误整理** — 校对完成后，可对错误条目进行整理
+- **便于核查** — 导出的 PDF 文件带有可定位的详细注释，便于核查
 
-Detypo 目前支持以下校对类型：
+主要识别以下错误类型：
 
-- 用字错误（形近字、同音字、异体字）
-- 用词不当（近义词混淆、搭配不当）
-- 语法错误（成分残缺、语序不当）
-- 标点符号（中英文标点混用、缺失）
-- 数字用法（阿拉伯数字与汉字混用）
-- 政治敏感（禁用词、不当表述）
+<div align="center">
+
+| 类别 | 示例 |
+| :--- | :--- |
+| 用字错误 | 形近 / 同音 / 近音误用、使用字形不规范（繁体字 / 异体字 / 旧字形） |
+| 用词不当 | 异形词 / 形近词误用、成语误用、生造词 / 方言词 / 外来词、缩略语等使用不规范 |
+| 语法错误 | 词性误用、成分残缺、搭配不当、句式杂糅、歧义、数量表达混乱 |
+| 标点符号 | 逗号 / 顿号 / 分号、引号、书名号、省略号 / 破折号 / 连接号、冒号 / 问号 / 叹号等误用 |
+| 数字用法 | 阿拉伯数字与汉字数字使用、概数表达、计量单位等使用不规范 |
+| 政治敏感 | 政治敏感表达、违反相关法律法规 |
+
+<sub>详见 `rules/proofreading-rules.md`</sub>
+
+</div>
 
 ---
 
@@ -50,23 +51,23 @@ Detypo 目前支持以下校对类型：
 
 ## 准备工作
 
-- **Python 3.10+**（本地运行）或 **Docker**（推荐）
-- **Node.js 18+**（仅本地开发模式需要）
-- **DeepSeek API Key** — [在此获取](https://platform.deepseek.com/api_keys)
+- **Python 3.10+**
+- **Node.js 18+**
+- **[DeepSeek API Key](https://platform.deepseek.com/api_keys)**
 
-## Docker（推荐）
+## Docker
 
 ```bash
 docker run -p 3000:3000 poyinte/detypo
 ```
 
-带 API Key：
+带 API Key `也可在运行界面中设置`：
 
 ```bash
 docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 ```
 
-然后访问 `http://localhost:3000`。API Key 也可在界面中输入。
+然后访问 `http://localhost:3000`。
 
 ## Windows
 
@@ -102,31 +103,19 @@ python server.py
 # 访问 http://127.0.0.1:3000
 ```
 
-## 启动模式
-
-<div align="center">
-
-| 命令 | 模式 | 说明 |
-| :--- | :--- | :--- |
-| `detypo.bat` | 生产 | 构建前端，后端单端口 :3000 服务。Ctrl+C 停止 |
-| `detypo.bat dev` | 开发 | 前后端分离，热重载，浏览器打开 :4000 |
-| `detypo.bat stop` | — | 停止开发模式的后台服务 |
-
 </div>
 
 ---
 
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 使用说明
 
-## 界面使用流程
-
-1. 启动后输入 DeepSeek API Key（首次使用时弹窗引导，也可在侧边栏「API 设置」中修改）
-2. 上传 PDF — 拖拽到页面或点击按钮选择文件
-3. 选择校对页码范围（可选），向导中会显示页面预览和预估用量
-4. 点击「开始校对」，等待实时进度条完成
-5. 在列表或卡片视图中浏览校对结果，按错误类别筛选
-6. 勾选/取消不需要的修改项
-7. 点击「导出 PDF」下载带有色块标注的校对稿
+1. **设置 API Key** — 启动后输入 `DeepSeek API Key`（首次使用时弹窗引导，之后可在侧边栏 <kbd>API 设置</kbd> 中修改）
+2. **上传 PDF** — 拖入 PDF 文件到页面 `虚线框` 内或点击 <kbd>选择 PDF 文件</kbd>
+3. **设置校对范围** — 选择校对页码范围，`向导` 中会显示页面预览和预估用量
+4. **开始校对** — 点击 <kbd>开始校对</kbd>，等待校对完成
+5. **浏览校对结果** — 在 <kbd>列表</kbd> 或 <kbd>卡片</kbd> 视图中浏览校对结果，可按错误类别进行筛选
+6. **整理校对结果** — 点击条目以选中，<kbd>鼠标右键</kbd> 进行 `剔除` / `恢复` （按住 <kbd>鼠标左键</kbd> 拖动可 `批量选中`）
+7. **导出 PDF** — 点击 <kbd>导出 PDF</kbd> 下载带有标注的校对稿
 
 ---
 
@@ -134,10 +123,10 @@ python server.py
 
 ## 校对规则
 
-校对规则库（`rules/proofreading-rules.md`）通过 AI 从《图书编辑校对实用手册》中提取整理，涵盖形近字、同音字、近义词、标点、数字用法、政治敏感词等常见错误类型。
+校对规则库 `rules/proofreading-rules.md` 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
 
 > [!IMPORTANT]
-> 具体词条（如形近字辨析组）属于汉语语言文字事实，不受著作权法保护。但原书的编排结构和例句选择可能受版权保护。本项目仅用于学术研究和个人使用，使用者应自行评估合规性。
+> 本项目仅用于学术研究和个人使用，使用者应自行评估合规性。
 
 ## 技术栈
 
@@ -149,15 +138,9 @@ python server.py
 | AI | DeepSeek API (deepseek-v4-flash) |
 | 前端 | React 19, TypeScript, Vite |
 | UI | shadcn/ui, Tailwind CSS 4, Radix UI |
-| 部署 | Docker, GitHub Actions → Docker Hub |
 
 </div>
 
 ## 许可证
 
-本项目采用 **GNU AGPL v3.0** 许可证（受 PyMuPDF 依赖约束）。
-
-> [!WARNING]
-> AGPL v3 要求通过网络使用软件时必须公开全部源代码。如需闭源商用，请购买 [Artifex](https://artifex.com/) 的 PyMuPDF 商业许可证。
-
-其他依赖均采用宽松许可证（MIT、BSD）。
+本项目采用 **GNU AGPL v3.0** 许可证。
