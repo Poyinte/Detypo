@@ -13,7 +13,7 @@
 </p>
 
 中文 PDF 校对工具 —— 调用 AI 自动识别常见错误<br>
-<sub>Made with <code>DeepSeek-V4</code></sub>
+<sub>Made with <code><img src="./docs/icons/deepseek.png" height="14" align="center"> DeepSeek-V4</code></sub>
 
 ![Python](https://img.shields.io/badge/-Python_3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Node.js](https://img.shields.io/badge/-Node.js_18+-339933?style=flat-square&logo=node.js&logoColor=white)
@@ -97,15 +97,6 @@ chmod +x detypo
 ./detypo stop           # 停止后台服务
 ```
 
-## 手动安装
-
-```bash
-pip install -r requirements.txt
-cd frontend && npm install && npm run build && cd ..
-python server.py
-# 访问 http://127.0.0.1:3000
-```
-
 ---
 
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 使用说明
@@ -144,4 +135,4 @@ python server.py
 
 ## 许可证
 
-本项目采用 **GNU AGPL v3.0** 许可证。
+本项目采用 **[GNU AGPL v3.0](https://www.gnu.org/licenses/agpl-3.0.html)** 许可证。
