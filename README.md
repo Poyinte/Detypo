@@ -5,7 +5,10 @@
 </div>
 <br>
 <div align="center">
-<img src="./frontend/public/logo-readme.svg" height="120" align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./frontend/public/logo-dark.svg">
+  <img src="./frontend/public/logo.svg" height="120" align="center">
+</picture>
 
 中文 PDF 校对工具 — 调用 DeepSeek API 自动校对错别字、标点、用语与禁用词
 <br>
