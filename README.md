@@ -1,12 +1,12 @@
 <div align="left">
- 
+
   [![AGPL v3][license-shield]][license-url]
 
 </div>
 <br>
 <div align="center">
 <p>
-<img src="./frontend/public/logo.svg" height="120" align="center">
+<img src="./frontend/public/logo.svg" height="120" align="center" style="background:#fff;border-radius:12px;padding:8px">
 </p>
 
 中文 PDF 校对工具 — 调用 DeepSeek API 自动校对错别字、标点、用语与禁用词
@@ -23,7 +23,7 @@
 
 ---
 
-# <img src="./frontend/public/logo.svg" height="30"> 功能特性
+# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/zap.svg" height="28" align="absmiddle"> 功能特性
 
 - **上传 PDF** — 支持拖拽或点击选择，支持选择校对页码范围
 - **校对类型** — 用字错误、用词不当、语法错误、标点符号、数字用法、政治敏感
@@ -35,7 +35,7 @@
 
 ---
 
-# <img src="./frontend/public/favicon.svg" height="30"> 快速开始
+# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/rocket.svg" height="28" align="absmiddle"> 快速开始
 
 ## Docker（推荐）
 
@@ -106,7 +106,7 @@ API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入。
 
 ---
 
-# <img src="./frontend/public/favicon.svg" height="30"> 技术栈
+# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/layers.svg" height="28" align="absmiddle"> 技术栈
 
 <div align="center">
 
@@ -122,14 +122,26 @@ API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入。
 
 ---
 
-# <img src="./frontend/public/favicon.svg" height="30"> 许可证
+# <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/shield-check.svg" height="28" align="absmiddle"> 许可证与法律声明
+
+## 许可证
 
 本项目采用 **GNU AGPL v3.0** 许可证（受 PyMuPDF 依赖约束）。
 
 >[!WARNING]
 > AGPL v3 要求通过网络使用软件时必须公开全部源代码。如需闭源商用，请购买 [Artifex](https://artifex.com/) 的 PyMuPDF 商业许可证。
 
+>[!NOTE]
+> 曾考虑使用 CC BY-NC-SA 4.0，但该许可证包含"非商业使用"限制，与 PyMuPDF 的 AGPL v3 不兼容。一个项目不能同时使用互不兼容的许可证。
+
 其他依赖均采用宽松许可证（MIT、BSD）。
+
+## 校对规则来源
+
+校对规则库（`rules/proofreading-rules.md`）通过 AI 从《图书编辑校对实用手册》（ProofreadingHandbook）中提取整理。
+
+>[!IMPORTANT]
+> **法律风险提示**：形近字组、同音词组等具体词条属于汉语语言文字事实，不受著作权法保护。但原书的编排结构、分类体系和例句选择可能受版权保护。AI 提取的规则库若系统性再现了原书的创作性内容，可能构成衍生作品。本项目仅用于学术研究和个人使用，使用者应自行评估在所属法域内的合规性。
 
 [license-shield]: https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square
 [license-url]: https://www.gnu.org/licenses/agpl-3.0.html
