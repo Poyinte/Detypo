@@ -1,263 +1,87 @@
-<a id="readme-top"></a>
+# 得误 Detypo — PDF 校对助手
 
-<!-- PROJECT SHIELDS -->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![AGPL License][license-shield]][license-url]
-[![Docker Pulls][docker-shield]][docker-url]
+中文 PDF 校对工具。上传 PDF 后自动提取文本，调用 DeepSeek API 进行校对（错别字、标点、用语规范、禁用词），结果以高亮标注形式覆盖到原始 PDF 上。
 
+## 功能
 
+- **上传 PDF** — 支持拖拽或点击选择，支持选择校对页码范围
+- **校对类型** — 用字错误、用词不当、语法错误、标点符号、数字用法、政治敏感
+- **结果浏览** — 列表 / 卡片双视图，按类别筛选，逐页浏览
+- **导出 PDF** — 排除不需要的修改项后，导出带有色块标注的校对稿
+- **暗色模式** — 支持浅色 / 深色 / 跟随系统
+- **Token 估算** — 开始校对前预估用量和费用
 
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
-  <a href="https://github.com/Poyinte/Detypo">
-    <img src="frontend/public/logo.svg" alt="Logo" width="80" height="64">
-  </a>
+## 依赖
 
-  <h3 align="center">得误 Detypo</h3>
+- **Python 3.10+** — 后端服务
+- **Node.js 18+** — 前端构建
+- **DeepSeek API Key** — [获取地址](https://platform.deepseek.com/api_keys)
 
-  <p align="center">
-    AI-powered Chinese PDF proofreading tool
-    <br />
-    <br />
-    <a href="https://github.com/Poyinte/Detypo"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/Poyinte/Detypo/issues/new?labels=bug">Report Bug</a>
-    &middot;
-    <a href="https://github.com/Poyinte/Detypo/issues/new?labels=enhancement">Request Feature</a>
-  </p>
-</div>
+## 快速开始
 
-
-
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#about-the-project">About The Project</a></li>
-    <li><a href="#built-with">Built With</a></li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#docker">Docker</a></li>
-        <li><a href="#windows">Windows</a></li>
-        <li><a href="#macos--linux">macOS / Linux</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
-
-
-
-<!-- ABOUT THE PROJECT -->
-## About The Project
-
-**得误 Detypo** is a Chinese-language PDF proofreading tool. Upload a PDF, extract text via PyMuPDF, send it to the DeepSeek API for proofreading (错别字, 标点, 用语规范, 禁用词), then overlay color-coded highlight annotations on the original PDF.
-
-### Key Features
-
-- **PDF Upload** — Drag & drop or click to select, with page range selection
-- **Proofreading Categories** — Typos, word misuse, grammar, punctuation, number usage, sensitive terms
-- **Dual View** — Table view for batch review, card view for detailed reading
-- **Page-by-page Navigation** — Browse errors grouped by page with pagination
-- **Export** — Toggle individual findings on/off, then export annotated PDF
-- **Dark Mode** — Light / dark / system-follow
-- **Token Estimation** — Preview cost and token usage before starting
-- **Progress Tracking** — Real-time progress bar with fake-progress smoothing during LLM batches
-- **SSE Streaming** — Live log updates during proofreading via Server-Sent Events
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- BUILT WITH -->
-## Built With
-
-| Layer | Technology |
-|---|---|
-| Backend | Python, FastAPI, PyMuPDF, SSE streaming |
-| AI | DeepSeek API (deepseek-v4-flash) |
-| Frontend | React 19, TypeScript, Vite |
-| UI | shadcn/ui, Tailwind CSS 4, Radix UI |
-| Packaging | Docker, Docker Compose |
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- GETTING STARTED -->
-## Getting Started
-
-### Prerequisites
-
-- **DeepSeek API Key** — [Get one here](https://platform.deepseek.com/api_keys)
-
-### Docker
+### Docker（推荐）
 
 ```bash
 docker run -p 3000:3000 poyinte/detypo
 ```
 
-With API key pre-set:
+带 API Key：
 ```bash
 docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 ```
 
-Open http://localhost:3000. You can also enter the API key in the app settings.
+然后访问 http://localhost:3000。API Key 也可以在界面中输入。
 
-### Windows
+### Windows 本地运行
 
 ```bash
 git clone git@github.com:Poyinte/Detypo.git
 cd Detypo
 
-# Double-click detypo.bat (production mode)
-# Or in CMD:
-detypo.bat              # Production mode (default)
-detypo.bat dev          # Development mode (hot-reload)
-detypo.bat stop         # Stop background services
+# 双击 detypo.bat（生产模式，构建前端后统一服务）
+# 或在 CMD 中：
+detypo.bat              # 生产模式（默认）
+detypo.bat dev          # 开发模式（热重载）
+detypo.bat stop         # 停止后台服务
 ```
 
-Requires Python 3.10+ and Node.js 18+. Dependencies are auto-installed on first run.
-
-### macOS / Linux
+### macOS / Linux 本地运行
 
 ```bash
 git clone git@github.com:Poyinte/Detypo.git
 cd Detypo
 chmod +x detypo
 
-./detypo                # Production mode (default)
-./detypo dev            # Development mode (hot-reload)
-./detypo stop           # Stop background services
+./detypo                # 生产模式（默认）
+./detypo dev            # 开发模式（热重载）
+./detypo stop           # 停止后台服务
 ```
 
-Requires Python 3.10+ and Node.js 18+. Dependencies are auto-installed on first run.
+首次运行会自动安装依赖，服务就绪后自动打开浏览器。
 
-### Manual Setup
+### 手动启动
 
 ```bash
 pip install -r requirements.txt
 cd frontend && npm install && npm run build && cd ..
 python server.py
-# Open http://127.0.0.1:3000
+# 访问 http://127.0.0.1:3000
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+API Key 可通过 `.env` 文件配置，或在界面「API 设置」中输入（保存在浏览器本地存储）。
 
+## 技术栈
 
+| 层 | 技术 |
+|---|---|
+| 后端 | Python, FastAPI, PyMuPDF, SSE streaming |
+| 前端 | React 19, TypeScript, Vite, shadcn/ui, Tailwind CSS 4 |
+| AI | DeepSeek API (deepseek-v4-flash) |
 
-<!-- USAGE -->
-## Usage
+## 许可证
 
-1. Launch the app (Docker / bat / bash script)
-2. Enter your DeepSeek API Key on the setup dialog or in sidebar settings
-3. Upload a PDF — drag & drop or click to select
-4. Select the page range you want to proofread
-5. Click "Start Proofreading" — the app extracts text, sends it to DeepSeek, and streams results
-6. Review findings in table or card view, toggle corrections on/off
-7. Export the annotated PDF with color-coded highlights
+本项目采用 AGPL v3 许可证（受 PyMuPDF 依赖约束）。参见 [LICENSE](https://www.gnu.org/licenses/agpl-3.0.html)。
 
-### Page Range Selection
-
-Before starting, you can select a subset of pages to proofread. The wizard shows page previews and estimates token usage and cost.
-
-### Modes
-
-| Command | Mode | Description |
-|---|---|---|
-| `detypo.bat` | Production | Builds frontend, single server on :3000 |
-| `detypo.bat dev` | Development | Hot-reload backend + frontend on :4000 |
-| `detypo.bat stop` | — | Stop all background services (dev mode only) |
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [x] PDF upload with drag & drop
-- [x] Page range selection with preview
-- [x] Token & cost estimation
-- [x] SSE streaming proofreading progress
-- [x] Table + card dual view
-- [x] Filter by error category
-- [x] Export annotated PDF
-- [x] Dark mode (light / dark / system)
-- [x] Docker image
-- [x] CI/CD (GitHub Actions → Docker Hub)
-- [ ] Batch proofreading (multiple PDFs)
-- [ ] Custom proofreading rules
-- [ ] Multi-language UI (English, Japanese)
-
-See the [open issues](https://github.com/Poyinte/Detypo/issues) for a full list.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- LICENSE -->
-## License
-
-This project is licensed under the **GNU AGPL v3.0** — see the [LICENSE](https://www.gnu.org/licenses/agpl-3.0.html) for details.
-
-> **Note:** AGPL is required by the PyMuPDF dependency. If you need a commercial license without copyleft restrictions, you can purchase a PyMuPDF commercial license from [Artifex](https://artifex.com/).
-
-Other dependencies are under permissive licenses (MIT, BSD).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
-
-- [PyMuPDF](https://pymupdf.readthedocs.io/) — PDF rendering & annotation
-- [FastAPI](https://fastapi.tiangolo.com/) — Backend framework
-- [shadcn/ui](https://ui.shadcn.com/) — UI component system
-- [DeepSeek](https://platform.deepseek.com/) — LLM API
-- [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- MARKDOWN LINKS -->
-[contributors-shield]: https://img.shields.io/github/contributors/Poyinte/Detypo.svg?style=for-the-badge
-[contributors-url]: https://github.com/Poyinte/Detypo/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Poyinte/Detypo.svg?style=for-the-badge
-[forks-url]: https://github.com/Poyinte/Detypo/network/members
-[stars-shield]: https://img.shields.io/github/stars/Poyinte/Detypo.svg?style=for-the-badge
-[stars-url]: https://github.com/Poyinte/Detypo/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Poyinte/Detypo.svg?style=for-the-badge
-[issues-url]: https://github.com/Poyinte/Detypo/issues
-[license-shield]: https://img.shields.io/github/license/Poyinte/Detypo.svg?style=for-the-badge
-[license-url]: https://github.com/Poyinte/Detypo/blob/main/LICENSE
-[docker-shield]: https://img.shields.io/docker/pulls/poyinte/detypo.svg?style=for-the-badge
-[docker-url]: https://hub.docker.com/r/poyinte/detypo
+第三方依赖的许可证：
+- PyMuPDF — AGPL v3 / Artifex Commercial
+- FastAPI, React, Vite, shadcn/ui — MIT
