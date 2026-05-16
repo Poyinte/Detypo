@@ -108,13 +108,6 @@ python server.py
 # 访问 http://127.0.0.1:3000
 ```
 
-API Key 可通过 `.env` 文件配置：
-
-```bash
-cp .env.example .env
-# 编辑 .env 填入 DEEPSEEK_API_KEY=sk-xxx
-```
-
 ## 启动模式
 
 <div align="center">
@@ -145,7 +138,6 @@ cp .env.example .env
 
 `requirements.txt` 中包含以下可选依赖，可根据需要安装：
 
-- `python-dotenv` — 通过 `.env` 文件配置环境变量
 - `tokenizers` — 离线 token 计数（上传 PDF 后自动计算每页 token 数）
 
 ---
