@@ -134,12 +134,6 @@ python server.py
 6. 勾选/取消不需要的修改项
 7. 点击「导出 PDF」下载带有色块标注的校对稿
 
-## 可选依赖
-
-`requirements.txt` 中包含以下可选依赖，可根据需要安装：
-
-- `tokenizers` — 离线 token 计数（上传 PDF 后自动计算每页 token 数）
-
 ---
 
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/shield-check-dark.svg"><img src="./docs/icons/shield-check.svg" height="28" align="absmiddle"></picture> 校对规则与许可证
