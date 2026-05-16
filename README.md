@@ -45,7 +45,7 @@
 | 数字用法 | 阿拉伯数字与汉字数字使用、概数表达、计量单位等使用不规范 |
 | 政治敏感 | 政治敏感表达、违反相关法律法规 |
 
-<sub>详见 `rules/proofreading-rules.md`</sub>
+<sub>详见 [`proofreading-rules.md`](rules/proofreading-rules.md)</sub>
 
 </div>
 
@@ -125,7 +125,7 @@ python server.py
 
 ## 校对规则
 
-校对规则库 `rules/proofreading-rules.md` 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
+校对规则库 [`proofreading-rules.md`](rules/proofreading-rules.md) 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
 
 > [!IMPORTANT]
 > 本项目仅用于学术研究和个人使用，使用者应自行评估合规性。
