@@ -67,6 +67,10 @@ npm run lint                              # ESLint
 
 **API key**: Stored in `localStorage`, sent as `?token=` query param. First-visit dialog if no key detected.
 
+## Git
+
+- **Commit attribution**: `Poyinte <poyinte@gmail.com>` — do NOT add `Co-Authored-By:` trailers. All commits are authored by the human maintainer.
+
 ## Deployment
 
 - **GitHub**: `github.com/Poyinte/Detypo`
