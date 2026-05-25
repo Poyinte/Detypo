@@ -21,7 +21,7 @@ REQUEST_TIMEOUT = 300
 
 # Server
 HOST = os.getenv("HOST", "127.0.0.1")
-PORT = int(os.getenv("PORT", "3000"))
+PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 
 # Proofreading rules

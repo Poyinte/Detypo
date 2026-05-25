@@ -61,16 +61,16 @@
 ## Docker
 
 ```bash
-docker run -p 3000:3000 poyinte/detypo
+docker run -p 8000:8000 poyinte/detypo
 ```
 
 带 API Key `也可在运行界面中设置`：
 
 ```bash
-docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
+docker run -p 8000:8000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 ```
 
-然后访问 `http://localhost:3000`。
+然后访问 `http://localhost:8000`。
 
 ## Windows
 
@@ -80,7 +80,7 @@ cd Detypo
 
 # 双击 detypo.bat（生产模式，构建前端后统一服务）
 # 或在 CMD 中：
-detypo.bat              # 生产模式（默认），服务在 :3000
+detypo.bat              # 生产模式（默认），服务在 :8000
 detypo.bat dev          # 开发模式（热重载），浏览器打开 :4000
 detypo.bat stop         # 停止后台服务
 ```

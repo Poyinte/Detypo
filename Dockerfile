@@ -5,10 +5,10 @@
 #   docker build -t detypo .
 #
 # Run:
-#   docker run -p 3000:3000 detypo
+#   docker run -p 8000:8000 detypo
 #
 # With custom API key:
-#   docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx detypo
+#   docker run -p 8000:8000 -e DEEPSEEK_API_KEY=sk-xxx detypo
 # =============================================================================
 
 # ─── Stage 1: Build frontend ───
@@ -49,7 +49,7 @@ COPY --from=frontend-builder /build/dist ./frontend/dist/
 # Create uploads directory
 RUN mkdir -p uploads
 
-EXPOSE 3000
+EXPOSE 8000
 
 ENV DETYPO_PROD=1
 ENV HOST=0.0.0.0

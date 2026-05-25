@@ -17,15 +17,15 @@ Made with FastAPI, React 19, and shadcn/ui.
 ## Start Detypo in Docker
 
 ```bash
-docker run -p 3000:3000 poyinte/detypo
+docker run -p 8000:8000 poyinte/detypo
 ```
 
-Then open http://localhost:3000 and enter your DeepSeek API key in the setup dialog.
+Then open http://localhost:8000 and enter your DeepSeek API key in the setup dialog.
 
 With a pre-configured API key:
 
 ```bash
-docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
+docker run -p 8000:8000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 ```
 
 ## Environment Variables
@@ -34,7 +34,7 @@ docker run -p 3000:3000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 | :--- | :--- | :--- |
 | `DEEPSEEK_API_KEY` | DeepSeek API key (can also be set in-app) | *(none)* |
 | `HOST` | Server bind address | `0.0.0.0` |
-| `PORT` | Server port | `3000` |
+| `PORT` | Server port | `8000` |
 
 ## Using Your Own API Key
 
@@ -58,7 +58,7 @@ Then stop and recreate your container:
 
 ```bash
 docker stop detypo && docker rm detypo
-docker run -p 3000:3000 poyinte/detypo
+docker run -p 8000:8000 poyinte/detypo
 ```
 
 ## Source Code

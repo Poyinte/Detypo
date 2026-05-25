@@ -10,7 +10,7 @@ import {
 import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIcon, XIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
-const API = 'http://127.0.0.1:3000'
+const API = 'http://127.0.0.1:8000'
 
 function fmtCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`

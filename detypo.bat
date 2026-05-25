@@ -6,7 +6,7 @@ setlocal enabledelayedexpansion
 :: detypo.bat - Detypo PDF Proofreader one-click launcher (Windows)
 :: =============================================================================
 :: Usage:
-::   detypo.bat             Prod mode (build, serve at :3000) [default]
+::   detypo.bat             Prod mode (build, serve at :8000) [default]
 ::   detypo.bat dev          Dev mode (hot-reload, opens :4000)
 ::   detypo.bat stop         Stop all services (dev mode)
 ::
@@ -16,7 +16,7 @@ setlocal enabledelayedexpansion
 :: Requires: Python 3.10+, Node.js 18+
 :: =============================================================================
 
-set BACKEND_PORT=3000
+set BACKEND_PORT=8000
 set FRONTEND_PORT=4000
 
 :: ---- Find Python ----
@@ -32,6 +32,7 @@ for %%c in (python python3) do (
     )
 )
 echo [detypo] Python not found. Please install Python 3.10+
+pause
 exit /b 1
 :python_found
 
@@ -39,6 +40,7 @@ exit /b 1
 where node >nul 2>nul
 if %errorlevel% neq 0 (
     echo [detypo] Node.js not found. Please install Node.js 18+
+    pause
     exit /b 1
 )
 
@@ -58,6 +60,7 @@ if %errorlevel% neq 0 (
     pip install -r requirements.txt >nul 2>&1
     if !errorlevel! neq 0 (
         echo [detypo] Python dep install failed
+        pause
         exit /b 1
     )
     echo [detypo] Python deps ready
@@ -71,6 +74,7 @@ if not exist "frontend\node_modules\" (
     cd ..
     if !errorlevel! neq 0 (
         echo [detypo] Frontend dep install failed
+        pause
         exit /b 1
     )
     echo [detypo] Frontend deps ready
@@ -81,32 +85,34 @@ call npm run build
 cd ..
 if %errorlevel% neq 0 (
     echo [detypo] Frontend build failed
+    pause
     exit /b 1
 )
 echo [detypo] Frontend build done
 
-:: Kill existing process on port 3000
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+:: Kill existing process on port 8000
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 echo.
 echo ======================================
 echo   Detypo is running (prod)
-echo   URL:  http://127.0.0.1:3000
+echo   URL:  http://127.0.0.1:8000
 echo   Stop: Ctrl+C or close this window
 echo ======================================
 echo.
-start "" "http://127.0.0.1:3000"
+start "" "http://127.0.0.1:8000"
 
 set DETYPO_PROD=1
 %PYTHON% server.py
 echo.
 echo [detypo] Server stopped. Cleaning up...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 taskkill /F /IM python.exe >nul 2>&1
 taskkill /F /IM node.exe >nul 2>&1
 echo [detypo] Done
+pause
 goto :eof
 
 
@@ -121,6 +127,7 @@ if %errorlevel% neq 0 (
     pip install -r requirements.txt >nul 2>&1
     if !errorlevel! neq 0 (
         echo [detypo] Python dep install failed
+        pause
         exit /b 1
     )
     echo [detypo] Python deps ready
@@ -134,18 +141,19 @@ if not exist "frontend\node_modules\" (
     cd ..
     if !errorlevel! neq 0 (
         echo [detypo] Frontend dep install failed
+        pause
         exit /b 1
     )
     echo [detypo] Frontend deps ready
 )
 
 :: Kill ports
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 :: Start backend
-echo [detypo] Starting backend (127.0.0.1:3000)...
+echo [detypo] Starting backend (127.0.0.1:8000)...
 start "DetypoBackend" /B cmd /c "%PYTHON% server.py > %TEMP%\detypo-backend-%RANDOM%.log 2>&1"
 
 :: Wait for backend
@@ -154,7 +162,7 @@ set /a _tries=0
 :dev_wait_backend
 set /a _tries+=1
 if %_tries% gtr 30 goto :dev_backend_timeout
-curl -s -o nul http://127.0.0.1:3000 2>nul
+curl -s -o nul http://127.0.0.1:8000 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
     goto :dev_wait_backend
@@ -200,7 +208,7 @@ goto :eof
 :: ======================== STOP ========================
 :do_stop
 echo [detypo] Stopping services...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 taskkill /F /IM python.exe >nul 2>&1
 taskkill /F /IM node.exe >nul 2>&1

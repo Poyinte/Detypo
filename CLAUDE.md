@@ -8,7 +8,7 @@ Detypo is a Chinese-language PDF proofreading tool. Users upload a PDF, the back
 
 ```bash
 # Windows
-detypo.bat              # Production mode (build + serve at :3000)
+detypo.bat              # Production mode (build + serve at :8000)
 detypo.bat dev          # Dev mode (hot-reload at :4000)
 detypo.bat stop         # Stop background services
 
@@ -18,7 +18,7 @@ detypo.bat stop         # Stop background services
 ./detypo stop           # Stop background services
 
 # Docker
-docker run -p 3000:3000 poyinte/detypo
+docker run -p 8000:8000 poyinte/detypo
 ```
 
 ## Repo structure
@@ -46,11 +46,11 @@ docker run -p 3000:3000 poyinte/detypo
 ```bash
 # Backend
 pip install -r requirements.txt
-python server.py                          # Starts at 127.0.0.1:3000
+python server.py                          # Starts at 127.0.0.1:8000
 
 # Frontend (from frontend/)
 npm install
-npm run dev                               # Vite dev server at :4000, proxies /api → :3000
+npm run dev                               # Vite dev server at :4000, proxies /api → :8000
 npm run build                             # TypeScript check + Vite production build → dist/
 npm run lint                              # ESLint
 ```
