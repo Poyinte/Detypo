@@ -1,6 +1,6 @@
 "use client"
 
-import { type LucideIcon } from "lucide-react"
+import { type ElementType } from "react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,11 +19,12 @@ import {
 
 export function NavMain({
   items,
+  groupLabel = "导航",
 }: {
   items: {
     title: string
     url: string
-    icon?: LucideIcon
+    icon?: ElementType
     isActive?: boolean
     disabled?: boolean
     items?: {
@@ -34,10 +35,11 @@ export function NavMain({
     }[]
     onClick?: () => void
   }[]
+  groupLabel?: string
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>导航</SidebarGroupLabel>
+      <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
