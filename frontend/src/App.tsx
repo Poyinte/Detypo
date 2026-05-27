@@ -375,8 +375,12 @@ export default function App() {
     if (!apiKey) return
     // Set range if not already set (sidebar start button clicked from wizard)
     if (range && !pageRange) setPageRange(range)
+    // Abort any in-flight EventSource from a previous session
+    abortRef.current?.abort()
+    abortRef.current = null
     setErrors([]); setExcludedIds(new Set()); setCurrentPage(1)
     setTotalTokens(0); setCacheHitTokens(0); setProofCost(0); setShowElapsed(true)
+    setModelName('')
     setShowProgress(true); setProgressPct(0); setDisconnected(false)
     setLogLines([])
     pushLog('proofreading started')
@@ -409,14 +413,15 @@ export default function App() {
       abortRef.current = { abort: () => es.close() }
       ;['extracting', 'llm_waiting', 'batch_done', 'page_done', 'complete', 'proofread_error', 'stopped']
         .forEach(ev => es.addEventListener(ev, (e: MessageEvent) => {
-          const d = JSON.parse(e.data)
+          let d: any
+          try { d = JSON.parse(e.data) } catch { return }
           if (typeof d.tokens === 'number' && ev === 'batch_done') {
             totalPromptRef.current += d.prompt_tokens || 0
             totalCompletionRef.current += d.completion_tokens || 0
             cacheHitRef.current += d.cache_hit || 0
             setTotalTokens(totalPromptRef.current + totalCompletionRef.current)
             setCacheHitTokens(cacheHitRef.current)
-            if (d.model && !modelName) setModelName(d.model)
+            if (d.model) setModelName(d.model)
           }
           handleSSE(ev, d)
         }))
@@ -534,6 +539,7 @@ export default function App() {
   }, [])
 
   const doUpload = useCallback(() => {
+    abortRef.current?.abort(); abortRef.current = null
     setReuploadOpen(false)
     setErrors([])
     setExcludedIds(new Set())
@@ -652,7 +658,7 @@ export default function App() {
               proofLang={proofLang}
               onSetProofLang={setProofLang}
               onUpload={(file) => file ? upload(file) : openFilePicker()}
-              onClose={() => { setFileId(null); setPageRange(null) }}
+              onClose={() => { abortRef.current?.abort(); abortRef.current = null; setFileId(null); setPageRange(null) }}
               onStart={(range) => {
                 setPageRange(range)
                 startProofread(range)

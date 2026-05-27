@@ -106,8 +106,23 @@ export function DataTable({
   const [categoryVis, setCategoryVis] = React.useState<Set<string>>(new Set(categories))
   const categoryVisRef = React.useRef(categoryVis)
   categoryVisRef.current = categoryVis  // sync ref synchronously for stable column headers
+  const categoryVisInitialized = React.useRef(false)
   React.useEffect(() => {
-    setCategoryVis(new Set(categoriesInData))
+    // Only auto-include new categories on first data load; after that, respect user's manual toggles
+    if (!categoryVisInitialized.current && categoriesInData.size > 0) {
+      setCategoryVis(new Set(categoriesInData))
+      categoryVisInitialized.current = true
+    } else if (categoryVisInitialized.current) {
+      // Add genuinely new categories (not yet in the filter) without removing user's choices
+      setCategoryVis(prev => {
+        const next = new Set(prev)
+        let changed = false
+        for (const cat of categoriesInData) {
+          if (!next.has(cat)) { next.add(cat); changed = true }
+        }
+        return changed ? next : prev
+      })
+    }
   }, [categoriesInData])
 
   // filteredData uses categoryVis as the sole display filter.
