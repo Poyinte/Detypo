@@ -250,14 +250,14 @@ async def export_pdf(file_id: str, body: ExportRequest):
     output_path = os.path.join(UPLOAD_DIR, f"{file_id}_export.pdf")
 
     engine = PdfEngine(orig_path)
+    lang = session.get("proof_lang", session.get("detected_lang", "zh"))
+    profile = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["zh"])
+    default_cat = list(profile.categories.keys())[0]
+    default_hex = list(profile.categories.values())[0]
     for err in errors:
         if err.get("error_id") in exclude_set:
             continue
-        lang = session.get("proof_lang", session.get("detected_lang", "zh"))
-        profile = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["zh"])
-        default_cat = list(profile.categories.keys())[0]
-        default_hex = list(profile.categories.values())[0]
-        category = err.get("category", default_cat)
+        category = (err.get("category") or "").strip() or default_cat
         hex_color = profile.categories.get(category, default_hex)
         color = hex_to_rgb(hex_color)
         bbox = tuple(err.get("bbox", [0, 0, 0, 0]))
