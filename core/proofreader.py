@@ -181,19 +181,11 @@ class Proofreader:
             page_nums = result["page_nums"]
 
             resolved = []
-            seen_ids: dict[str, int] = {}  # dedupe: same span may have multiple error types
             for err in llm_errors:
                 err_id = err.get("error_id", "").strip()
                 info = self._annotator.lookup(err_id)
                 if info is None:
                     continue
-                # Deduplicate: if LLM returns same span ID multiple times (e.g. spelling + grammar
-                # on the same word), append suffix to make each error_id unique
-                if err_id in seen_ids:
-                    seen_ids[err_id] += 1
-                    err_id = f"{err_id}-{seen_ids[err_id]}"
-                else:
-                    seen_ids[err_id] = 1
                 default_cat = list(self._profile.categories.keys())[0]
                 default_hex = list(self._profile.categories.values())[0]
                 category = err.get("category", default_cat)

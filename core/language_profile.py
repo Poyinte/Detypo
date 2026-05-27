@@ -24,7 +24,8 @@ _SYSTEM_PROMPTS: dict[str, str] = {
         "2. category 必须是以下值之一：{categories}\n"
         "3. 只返回确实有错误的条目。原文正确则不要编造条目。\n"
         "4. original 和 correction 必须不同，correction 必须是正确的修改建议。\n"
-        "5. 每个 original 控制在 50 字以内，精确指向错误位置，不要整段返回。\n\n"
+        "5. 每个 original 控制在 50 字以内，精确指向错误位置，不要整段返回。\n"
+        "6. 每个 [#NNNN] 标识符最多只能在一条错误中出现。若同一片段涉及多种错误类型，只选择最主要的那一类标记。\n\n"
         "你必须严格输出如下 JSON 格式，不要包含任何其他内容：\n"
         '{{"errors": [{{"error_id": "#0001", "original": "错字", "correction": "正字", "category": "用字错误", "reason": "原因"}}]}}\n'
         '如果没有发现任何错误，请输出：{{"errors": []}}'
@@ -37,7 +38,8 @@ _SYSTEM_PROMPTS: dict[str, str] = {
         "2. category must be one of: {categories}\n"
         "3. Only return entries that contain actual errors. Do NOT fabricate entries for correct text.\n"
         "4. original and correction must differ; correction must be an accurate suggestion.\n"
-        "5. Keep each original under 50 words, pinpointing the exact error location.\n\n"
+        "5. Keep each original under 50 words, pinpointing the exact error location.\n"
+        "6. Each [#NNNN] identifier may appear in at most one error entry. If the same segment has multiple error types, mark only the most significant one.\n\n"
         "You must output strictly the following JSON format with no other content:\n"
         '{{"errors": [{{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling", "reason": "explanation"}}]}}\n'
         'If no errors are found, output: {{"errors": []}}'
