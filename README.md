@@ -139,16 +139,16 @@ chmod +x detypo
 2. 在 [`rules/languages.json`](rules/languages.json) 中添加对应条目：
 
 ```json
-"fr": {
-  "name": "Français",
+"ja": {
+  "name": "日本語",
   "categories": {
-    "Orthographe": "#D44545",
-    "Grammaire": "#6E9ED4",
-    "Ponctuation": "#45D46E",
-    "Nombres": "#D4A86E"
+    "表記": "#D44545",
+    "文法": "#6E9ED4",
+    "句読点": "#45D46E",
+    "数字": "#D4A86E"
   },
-  "system_prompt": "Vous êtes un correcteur professionnel...\n\n{rules}\n\n...\ncategory must be one of: {categories}...",
-  "false_reasons": ["correct", "pas d'erreur"]
+  "system_prompt": "あなたはプロの校正者です。以下のルールに従ってテキストを校正してください。\n\n{rules}\n\n重要：\n1. [#NNNN] は位置識別子です。校正しないでください。\n2. category は次のいずれか：{categories}\n3. 実際のエラーのみを返してください。\n4. 各 [#NNNN] は 1 つのエントリにのみ表示できます。\n\n厳密に次のJSON形式で出力：\n{\"errors\": [{\"error_id\": \"#0001\", \"original\": \"誤字\", \"correction\": \"正字\", \"category\": \"表記\", \"reason\": \"理由\"}]}",
+  "false_reasons": ["誤りなし", "正しい", "問題なし"]
 }
 ```
 
