@@ -259,7 +259,7 @@ export function PdfUploadWizard({
           <XIcon className="size-4" />
         </button>
         <Field className="w-full rounded-xl border bg-card p-5 shadow-sm gap-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div>
             <span className="text-base font-semibold">{t('wizard.range_title')}</span>
             <FieldDescription className="mt-0.5">
