@@ -15,11 +15,10 @@
     "name": "English",
     "prompt_lang": "en",
     "categories": {
-      "Spelling": "#D44545",
+      "Spelling & Word Confusions": "#D44545",
       "Grammar": "#6E9ED4",
       "Punctuation": "#45D46E",
-      "Style": "#D4A86E",
-      "Typography": "#A86ED4"
+      "Numbers": "#D4A86E"
     }
   }
 }
