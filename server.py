@@ -197,16 +197,17 @@ async def proofread_stream(
                 if event is None:
                     break
                 yield f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False)}\n\n"
-                if event["event"] in ("complete", "proofread_error", "stopped"):
+                if event["event"] in ("complete", "proofread_error", "error", "stopped"):
                     break
         finally:
+            thread.join(timeout=5)
             try:
                 engine.save()
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to save PDF for session {file_id}: {e}")
             session["status"] = "done"
             session["errors"] = proofreader.errors
-            thread.join(timeout=5)
 
     return StreamingResponse(
         event_stream(),

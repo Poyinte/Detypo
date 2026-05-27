@@ -32,8 +32,8 @@ _FALLBACK_PROMPT = (
     "5. Keep each original under 50 words, pinpointing the exact error location.\n"
     "6. Each [#NNNN] identifier may appear in at most one error entry. If the same segment has multiple error types, mark only the most significant one.\n\n"
     "You must output strictly the following JSON format with no other content:\n"
-    '{{"errors": [{{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling", "reason": "explanation"}}]}}\n'
-    'If no errors are found, output: {{"errors": []}}'
+    '{"errors": [{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling", "reason": "explanation"}]}\n'
+    'If no errors are found, output: {"errors": []}'
 )
 
 _FALLBACK_FALSE_REASONS: list[str] = ["no error", "correct usage", "acceptable"]
@@ -41,7 +41,9 @@ _FALLBACK_FALSE_REASONS: list[str] = ["no error", "correct usage", "acceptable"]
 
 def hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
     """Convert '#D44545' to (0.831, 0.271, 0.271) for PyMuPDF."""
-    h = hex_color.lstrip("#")
+    h = hex_color.lstrip("#").strip()
+    if len(h) != 6:
+        raise ValueError(f"Invalid hex color: {hex_color!r}")
     return tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
 
 
@@ -62,6 +64,10 @@ def load_profiles(rules_dir: str, languages_json_path: str) -> dict[str, Languag
     for code, cfg in lang_configs.items():
         rules_file = rules_path / f"proofreading-rules-{code}.md"
         if not rules_file.exists():
+            continue
+        if not cfg.get("categories"):
+            import logging
+            logging.warning(f"Language '{code}' has no categories — skipping")
             continue
         rules_content = rules_file.read_text(encoding="utf-8")
         system_prompt = _build_system_prompt(cfg, rules_content, cfg["categories"])

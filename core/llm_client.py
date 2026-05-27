@@ -17,7 +17,7 @@ class LlmClient:
             raw_key = raw_key[7:]
         self.api_key = raw_key.strip()
         self.model = model or MODEL_NAME
-        self.temperature = temperature or TEMPERATURE
+        self.temperature = temperature if temperature is not None else TEMPERATURE
 
     def _ensure_key(self):
         if not self.api_key or not self.api_key.startswith("sk-"):
@@ -104,13 +104,18 @@ class LlmClient:
                     _time.sleep(wait)
                     continue
                 break
-            except requests.Timeout:
+            except (requests.Timeout, requests.ConnectionError) as e:
+                last_exc = e
+                if attempt < 2:
+                    wait = 2 ** attempt
+                    _time.sleep(wait)
+                    continue
+                if isinstance(e, requests.Timeout):
+                    raise LlmError(
+                        f"DeepSeek API 请求超时（{REQUEST_TIMEOUT}秒），已重试 3 次。请尝试校对更短的文本段。"
+                    )
                 raise LlmError(
-                    f"DeepSeek API 请求超时（{REQUEST_TIMEOUT}秒）。请尝试校对更短的文本段。"
-                )
-            except requests.ConnectionError:
-                raise LlmError(
-                    "无法连接 DeepSeek API。请检查网络连接和 API Key。",
+                    "无法连接 DeepSeek API，已重试 3 次。请检查网络连接和 API Key。",
                     "地址: " + DEEPSEEK_BASE_URL,
                 )
         else:
