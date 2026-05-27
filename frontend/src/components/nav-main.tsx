@@ -39,7 +39,7 @@ export function NavMain({
   groupLabel?: string
 }) {
   const { t } = useI18n()
-  const label = groupLabel || t("nav.docs")
+  const label = groupLabel || t("nav.navigation")
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>

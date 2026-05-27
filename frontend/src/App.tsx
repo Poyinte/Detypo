@@ -174,10 +174,8 @@ export default function App() {
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('auto')
-  void setProofLang // wired to future UI dropdown
   const [detectedLang, setDetectedLang] = useState<string>('zh')
   const [availableLangs, setAvailableLangs] = useState<Record<string, string>>({})
-  void availableLangs // wired to future UI dropdown
 
   // Language-specific categories and colors (from API)
   const [langCategories, setLangCategories] = useState<Record<string, string>>({})
@@ -588,6 +586,10 @@ export default function App() {
               fileId={fileId || ''}
               filename={filename}
               pageTokenCounts={pageTokenCounts}
+              detectedLang={detectedLang}
+              availableLangs={availableLangs}
+              proofLang={proofLang}
+              onSetProofLang={setProofLang}
               onUpload={(file) => file ? upload(file) : openFilePicker()}
               onClose={() => { setFileId(null); setPageRange(null) }}
               onStart={(range) => {

@@ -56,7 +56,7 @@ export function AppSidebar({
 
   // Sync draft to saved key on popover close or validation failure
   useEffect(() => {
-    if (keyStatus && keyStatus !== '验证中...' && !keyOk) {
+    if (keyStatus && keyStatus !== 'checking' && !keyOk) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftKey(apiKey)
     }
@@ -162,12 +162,12 @@ export function AppSidebar({
                   <Button
                     onClick={() => onValidateKey(draftKey)}
                     size="sm"
-                    disabled={keyStatus === '验证中...'}
-                    variant={keyOk ? 'secondary' : keyStatus && !keyOk && keyStatus !== '验证中...' ? 'destructive' : 'outline'}
+                    disabled={keyStatus === 'checking'}
+                    variant={keyOk ? 'secondary' : keyStatus && !keyOk && keyStatus !== 'checking' ? 'destructive' : 'outline'}
                     className={cn(keyOk && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
                   >
-                    {keyStatus === '验证中...' && <Spinner data-icon="inline-start" />}
-                    {keyOk ? t('nav.validate_pass') : keyStatus && !keyOk && keyStatus !== '验证中...' ? t('nav.validate_fail') : t('nav.validate_btn')}
+                    {keyStatus === 'checking' && <Spinner data-icon="inline-start" />}
+                    {keyOk ? t('nav.validate_pass') : keyStatus && !keyOk && keyStatus !== 'checking' ? t('nav.validate_fail') : t('nav.validate_btn')}
                   </Button>
                 </div>
               </PopoverContent>

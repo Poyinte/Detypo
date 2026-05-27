@@ -7,7 +7,7 @@ import {
   Empty, EmptyContent, EmptyDescription, EmptyHeader,
   EmptyMedia, EmptyTitle,
 } from '@/components/ui/empty'
-import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIcon, XIcon } from 'lucide-react'
+import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIcon, XIcon, ChevronDownIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useI18n } from '@/i18n'
 
@@ -83,13 +83,19 @@ interface PdfUploadWizardProps {
   fileId: string
   filename: string
   pageTokenCounts: number[]
+  detectedLang: string
+  availableLangs: Record<string, string>
+  proofLang: string
+  onSetProofLang: (lang: string) => void
   onStart: (range: [number, number]) => void
   onUpload: (file?: File) => void
   onClose: () => void
 }
 
 export function PdfUploadWizard({
-  pageCount, fileId, filename, pageTokenCounts, onStart, onUpload, onClose,
+  pageCount, fileId, filename, pageTokenCounts,
+  detectedLang, availableLangs, proofLang, onSetProofLang,
+  onStart, onUpload, onClose,
 }: PdfUploadWizardProps) {
   const { t } = useI18n()
   const [dragOver, setDragOver] = useState(false)
@@ -248,11 +254,33 @@ export function PdfUploadWizard({
           <XIcon className="size-4" />
         </button>
         <Field className="w-full rounded-xl border bg-card p-5 shadow-sm gap-3">
-        <div>
-          <span className="text-base font-semibold">{t('wizard.range_title')}</span>
-          <FieldDescription className="mt-0.5">
-            {t('wizard.file_info', { filename, pages: pageCount })}
-          </FieldDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="text-base font-semibold">{t('wizard.range_title')}</span>
+            <FieldDescription className="mt-0.5">
+              {t('wizard.file_info', { filename, pages: pageCount })}
+            </FieldDescription>
+          </div>
+          {Object.keys(availableLangs).length > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              onClick={() => {
+                const effective = proofLang === 'auto' ? detectedLang : proofLang
+                const langs = Object.keys(availableLangs)
+                const next = langs[(langs.indexOf(effective) + 1) % langs.length]
+                onSetProofLang(next)
+              }}
+            >
+              {(() => {
+                const effective = proofLang === 'auto' ? detectedLang : proofLang
+                return availableLangs[effective] || effective
+              })()}
+              {proofLang === 'auto' && <span className="text-muted-foreground">(auto)</span>}
+              <ChevronDownIcon className="size-3" />
+            </Button>
+          )}
         </div>
 
         {/* Page previews */}

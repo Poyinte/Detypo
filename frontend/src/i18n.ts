@@ -8,6 +8,7 @@ const translations: Record<UILang, Record<string, string>> = {
     // Sidebar
     'nav.upload': '上传 PDF',
     'nav.export': '导出 PDF',
+    'nav.navigation': '导航',
     'nav.docs': '使用文档',
     'nav.github': 'GitHub',
     'nav.api_settings': 'API 设置',
@@ -102,6 +103,7 @@ const translations: Record<UILang, Record<string, string>> = {
     // Sidebar
     'nav.upload': 'Upload PDF',
     'nav.export': 'Export PDF',
+    'nav.navigation': 'Navigation',
     'nav.docs': 'Documentation',
     'nav.github': 'GitHub',
     'nav.api_settings': 'API Settings',
