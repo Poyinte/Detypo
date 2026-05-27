@@ -137,17 +137,18 @@ chmod +x detypo
 ```json
 "fr": {
   "name": "Français",
-  "prompt_lang": "fr",
   "categories": {
     "Orthographe": "#D44545",
     "Grammaire": "#6E9ED4",
     "Ponctuation": "#45D46E",
     "Nombres": "#D4A86E"
-  }
+  },
+  "system_prompt": "You are a professional copyeditor...\n\n{rules}\n\n{categories}...",
+  "false_reasons": ["correct", "pas d'erreur"]
 }
 ```
 
-3. 如需适配系统提示词，在 [`core/language_profile.py`](core/language_profile.py) 的 `_SYSTEM_PROMPTS` 中追加该语种的模板（不提供则回退为英文提示词）
+3. 可选：添加 `system_prompt`（系统提示词模板，支持 `{rules}` 和 `{categories}` 占位符）和 `false_reasons`（误报过滤关键词）。不提供则使用内置英文默认值
 4. 重启服务即可生效
 
 > [!NOTE]
@@ -162,6 +163,8 @@ chmod +x detypo
 **中文规则库** [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md) 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
 
 **英文规则库** [`proofreading-rules-en.md`](rules/proofreading-rules-en.md) 通过 AI 从 [*The Chicago Manual of Style* <sub>（18th Edition）</sub>](https://www.chicagomanualofstyle.org/) 中提取整理。
+
+所有语种配置（名称、分类、颜色、系统提示词、误报过滤词）均集中于 [`rules/languages.json`](rules/languages.json)，无需修改 Python 代码即可添加新语种。
 
 > [!IMPORTANT]
 > 本项目仅用于学术研究和个人使用，使用者应自行评估合规性。

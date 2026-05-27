@@ -46,15 +46,13 @@ class LlmClient:
             return False
 
     @staticmethod
-    def _filter_false_positives(errors: list[dict], lang_code: str = "zh") -> list[dict]:
+    def _filter_false_positives(errors: list[dict], false_reasons: list[str]) -> list[dict]:
         """Filter out LLM responses that are false positives:
         - original == correction (no actual change)
         - reason indicates no error
         - original is too long (likely a whole paragraph with no real error)
         - empty original or correction
         """
-        from core.language_profile import FALSE_REASONS
-        false_reasons = FALSE_REASONS.get(lang_code, FALSE_REASONS["zh"])
         filtered = []
         for err in errors:
             original = err.get("original", "").strip()
@@ -132,7 +130,7 @@ class LlmClient:
 
         try:
             errors = json.loads(content).get("errors", [])
-            return self._filter_false_positives(errors, profile.code), usage
+            return self._filter_false_positives(errors, profile.false_reasons), usage
         except json.JSONDecodeError:
             text = content.strip()
             if text.startswith("```json"):
@@ -143,6 +141,6 @@ class LlmClient:
                 text = text[:-3]
             try:
                 errors = json.loads(text.strip()).get("errors", [])
-                return self._filter_false_positives(errors, profile.code), usage
+                return self._filter_false_positives(errors, profile.false_reasons), usage
             except json.JSONDecodeError:
                 return [], usage

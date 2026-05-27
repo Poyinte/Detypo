@@ -1,4 +1,10 @@
-"""Language profile — bundles rules, system prompt, categories, and colors per language."""
+"""Language profile — bundles rules, system prompt, categories, and colors per language.
+
+All language-specific settings (name, categories, colors, system prompt template,
+false-positive filter keywords) are configured in rules/languages.json.
+Adding a new language requires only editing that JSON file and providing a
+proofreading-rules-{code}.md file — no Python code changes needed.
+"""
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,54 +16,27 @@ class LanguageProfile:
     rules_content: str       # loaded rules file content
     categories: dict[str, str]  # {category_name: hex_color}
     system_prompt: str       # fully built system prompt
+    false_reasons: list[str] # keywords for false-positive filtering
 
 
-# Per-language system prompt templates.
-# {rules} and {categories} are injected at profile build time.
+# ── Fallback defaults (used when languages.json omits a field) ──
 
-_SYSTEM_PROMPTS: dict[str, str] = {
-    "zh": (
-        "你是一名专业的图书校对员。请严格按照以下校对规则对用户提供的文本进行校对。\n\n"
-        "{rules}\n\n"
-        "重要提示：\n"
-        "1. 文本中的 [#NNNN] 是文本块位置标识符，不是正文内容，不要校对这些 ID。\n"
-        "2. category 必须是以下值之一：{categories}\n"
-        "3. 只返回确实有错误的条目。原文正确则不要编造条目。\n"
-        "4. original 和 correction 必须不同，correction 必须是正确的修改建议。\n"
-        "5. 每个 original 控制在 50 字以内，精确指向错误位置，不要整段返回。\n"
-        "6. 每个 [#NNNN] 标识符最多只能在一条错误中出现。若同一片段涉及多种错误类型，只选择最主要的那一类标记。\n\n"
-        "你必须严格输出如下 JSON 格式，不要包含任何其他内容：\n"
-        '{{"errors": [{{"error_id": "#0001", "original": "错字", "correction": "正字", "category": "用字错误", "reason": "原因"}}]}}\n'
-        '如果没有发现任何错误，请输出：{{"errors": []}}'
-    ),
-    "en": (
-        "You are a professional book copyeditor. Proofread the following text strictly according to the rules below.\n\n"
-        "{rules}\n\n"
-        "Important:\n"
-        "1. Text marked with [#NNNN] are positional identifiers, not body text — do NOT proofread these IDs.\n"
-        "2. category must be one of: {categories}\n"
-        "3. Only return entries that contain actual errors. Do NOT fabricate entries for correct text.\n"
-        "4. original and correction must differ; correction must be an accurate suggestion.\n"
-        "5. Keep each original under 50 words, pinpointing the exact error location.\n"
-        "6. Each [#NNNN] identifier may appear in at most one error entry. If the same segment has multiple error types, mark only the most significant one.\n\n"
-        "You must output strictly the following JSON format with no other content:\n"
-        '{{"errors": [{{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling", "reason": "explanation"}}]}}\n'
-        'If no errors are found, output: {{"errors": []}}'
-    ),
-}
+_FALLBACK_PROMPT = (
+    "You are a professional book copyeditor. Proofread the following text strictly according to the rules below.\n\n"
+    "{rules}\n\n"
+    "Important:\n"
+    "1. Text marked with [#NNNN] are positional identifiers, not body text — do NOT proofread these IDs.\n"
+    "2. category must be one of: {categories}\n"
+    "3. Only return entries that contain actual errors. Do NOT fabricate entries for correct text.\n"
+    "4. original and correction must differ; correction must be an accurate suggestion.\n"
+    "5. Keep each original under 50 words, pinpointing the exact error location.\n"
+    "6. Each [#NNNN] identifier may appear in at most one error entry. If the same segment has multiple error types, mark only the most significant one.\n\n"
+    "You must output strictly the following JSON format with no other content:\n"
+    '{{"errors": [{{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling", "reason": "explanation"}}]}}\n'
+    'If no errors are found, output: {{"errors": []}}'
+)
 
-# English false-positive filter keywords
-_FALSE_REASONS_EN = [
-    "no error", "correct usage", "acceptable", "correct as is", "no change needed",
-]
-
-# Chinese false-positive filter keywords (extracted from existing llm_client.py)
-_FALSE_REASONS_ZH = ["无错误", "使用正确", "无误", "正确用法", "或使用正确", "没有错误"]
-
-FALSE_REASONS: dict[str, list[str]] = {
-    "zh": _FALSE_REASONS_ZH,
-    "en": _FALSE_REASONS_EN,
-}
+_FALLBACK_FALSE_REASONS: list[str] = ["no error", "correct usage", "acceptable"]
 
 
 def hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
@@ -66,10 +45,10 @@ def hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
     return tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
 
 
-def _build_system_prompt(lang_code: str, rules_content: str, categories: dict[str, str]) -> str:
-    template = _SYSTEM_PROMPTS.get(lang_code, _SYSTEM_PROMPTS["en"])
-    cat_list = "、".join(categories.keys()) if lang_code == "zh" else ", ".join(categories.keys())
-    return template.format(rules=rules_content, categories=cat_list)
+def _build_system_prompt(cfg: dict, rules_content: str, categories: dict[str, str]) -> str:
+    template = cfg.get("system_prompt") or _FALLBACK_PROMPT
+    cat_list = "、".join(categories.keys()) if cfg.get("prompt_lang") == "zh" else ", ".join(categories.keys())
+    return template.replace("{rules}", rules_content).replace("{categories}", cat_list)
 
 
 def load_profiles(rules_dir: str, languages_json_path: str) -> dict[str, LanguageProfile]:
@@ -85,13 +64,14 @@ def load_profiles(rules_dir: str, languages_json_path: str) -> dict[str, Languag
         if not rules_file.exists():
             continue
         rules_content = rules_file.read_text(encoding="utf-8")
-        system_prompt = _build_system_prompt(cfg.get("prompt_lang", code), rules_content, cfg["categories"])
+        system_prompt = _build_system_prompt(cfg, rules_content, cfg["categories"])
         profiles[code] = LanguageProfile(
             code=code,
             name=cfg["name"],
             rules_content=rules_content,
             categories=cfg["categories"],
             system_prompt=system_prompt,
+            false_reasons=cfg.get("false_reasons", _FALLBACK_FALSE_REASONS),
         )
     return profiles
 
