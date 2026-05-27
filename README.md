@@ -131,24 +131,26 @@ chmod +x detypo
 
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/languages-dark.svg"><img src="./docs/icons/languages.svg" height="28" align="absmiddle"></picture> 添加新语种
 
-**CLI 一键添加**：使用 `/add-language` 命令，传入语种代码和规则来源（PDF / 网址 / 让 AI 自行归纳），自动生成规则文件并注册到 [`rules/languages.json`](rules/languages.json)。
+## CLI 一键添加
 
-**手动添加**：
+使用 `/add-language` 命令，传入语种代码和规则来源（PDF / 网址 / 让 AI 自行归纳），自动生成规则文件并注册到 [`rules/languages.json`](rules/languages.json)。
+
+## 手动添加
 
 1. 在 [`rules/`](rules/) 目录下创建 `proofreading-rules-{code}.md`，写入该语种的校对规则
 2. 在 [`rules/languages.json`](rules/languages.json) 中添加对应条目：
 
-```json
+```jsonc
 "ja": {
-  "name": "日本語",
-  "categories": {
-    "表記": "#D44545",
-    "文法": "#6E9ED4",
-    "句読点": "#45D46E",
-    "数字": "#D4A86E"
+  "name": "日本語",                    // 显示名称（母语）
+  "categories": {                     // 错误分类 → hex 颜色
+    "表記": "#D44545",                // 红
+    "文法": "#6E9ED4",                // 蓝
+    "句読点": "#45D46E",              // 绿
+    "数字": "#D4A86E"                 // 琥珀
   },
-  "system_prompt": "あなたはプロの校正者です。以下のルールに従ってテキストを校正してください。\n\n{rules}\n\n重要：\n1. [#NNNN] は位置識別子です。校正しないでください。\n2. category は次のいずれか：{categories}\n3. 実際のエラーのみを返してください。\n4. 各 [#NNNN] は 1 つのエントリにのみ表示できます。\n\n厳密に次のJSON形式で出力：\n{\"errors\": [{\"error_id\": \"#0001\", \"original\": \"誤字\", \"correction\": \"正字\", \"category\": \"表記\", \"reason\": \"理由\"}]}",
-  "false_reasons": ["誤りなし", "正しい", "問題なし"]
+  "system_prompt": "…{rules}…{categories}…",  // 提示词模板，{rules} 和 {categories} 在运行时替换
+  "false_reasons": ["誤りなし", "正しい"]       // 误报过滤关键词（可选）
 }
 ```
 
@@ -156,7 +158,7 @@ chmod +x detypo
 4. 重启服务即可生效
 
 > [!NOTE]
-> 语种自动检测当前仅区分 CJK（中日韩统一表意文字）与 Latin 字符。若新语种与现有语种共用同一文字系统（如法语与英语），建议在向导中手动指定校对语种。
+> 语种自动检测当前仅区分 `CJK（中日韩统一表意文字）` 与 `Latin` 字符。若新语种与现有语种共用同一文字系统（如法语与英语），建议在向导中手动指定校对语种。
 
 ---
 
