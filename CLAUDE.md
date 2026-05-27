@@ -2,13 +2,13 @@
 
 ## Overview
 
-Detypo is a Chinese-language PDF proofreading tool. Users upload a PDF, the backend extracts text via PyMuPDF, sends it to the DeepSeek API for proofreading (错别字, 标点, 用语规范, 禁用词), then overlays color-coded highlight annotations on the original PDF. The frontend shows results in a table/card view with checkboxes to include/exclude findings before exporting the annotated PDF.
+Detypo is a bilingual (ZH/EN) PDF proofreading tool. Users upload a PDF, the backend extracts text via PyMuPDF, auto-detects the language, sends it to the DeepSeek API for proofreading with the appropriate rule set, then overlays color-coded highlight annotations on the original PDF. The frontend shows results in a table/card view with checkboxes to include/exclude findings before exporting the annotated PDF. English rules are based on The Chicago Manual of Style (18th ed.).
 
 ## Quick start
 
 ```bash
 # Windows
-detypo.bat              # Production mode (build + serve at :8000)
+detypo.bat              # Production mode (build + serve at :8520)
 detypo.bat dev          # Dev mode (hot-reload at :5173)
 detypo.bat stop         # Stop background services
 
@@ -18,7 +18,7 @@ detypo.bat stop         # Stop background services
 ./detypo stop           # Stop background services
 
 # Docker
-docker run -p 8000:8000 poyinte/detypo
+docker run -p 8520:8520 poyinte/detypo
 ```
 
 ## Repo structure
@@ -27,7 +27,7 @@ docker run -p 8000:8000 poyinte/detypo
 ├── server.py              # FastAPI backend (SSE streaming, upload, export)
 ├── core/                  # pdf_engine.py, text_annotator.py, llm_client.py, proofreader.py
 ├── utils/                 # config.py, rule_extractor.py, token_counter.py
-├── rules/                 # proofreading-rules.md
+├── rules/                 # proofreading-rules-zh.md, proofreading-rules-en.md, languages.json
 ├── tokenizer/             # DeepSeek V3 tokenizer files
 ├── frontend/              # React 19 + Vite + shadcn/ui
 │   ├── src/App.tsx        # Main component (monolithic, useState-driven)
@@ -46,19 +46,19 @@ docker run -p 8000:8000 poyinte/detypo
 ```bash
 # Backend
 pip install -r requirements.txt
-python server.py                          # Starts at 127.0.0.1:8000
+python server.py                          # Starts at 127.0.0.1:8520
 
 # Frontend (from frontend/)
 npm install
-npm run dev                               # Vite dev server at :5173, proxies /api → :8000
+npm run dev                               # Vite dev server at :5173, proxies /api → :8520
 npm run build                             # TypeScript check + Vite production build → dist/
 npm run lint                              # ESLint
 ```
 
 ## Architecture
 
-**Ports**: Backend default `8000`, frontend dev `5173`. Avoid `3000` and `4000` — both fall in Windows excluded port ranges (2991–3090 and 3966–4065). Port config lives in:
-- `utils/config.py` → `HOST` / `PORT` (backend)
+**Ports**: Backend default `8520`, frontend dev `5173`. On startup the backend probes for an available port (starting from default, up to 10 attempts) — use the printed URL. Avoid `3000` and `4000` — both fall in Windows excluded port ranges. The frontend uses relative API URLs so it never needs a port number. Port config lives in:
+- `utils/config.py` → `HOST` / `PORT` (backend default)
 - `frontend/vite.config.ts` → `server.port` + `proxy` target
 - `detypo.bat` / `detypo` → `BACKEND_PORT` / `FRONTEND_PORT`
 

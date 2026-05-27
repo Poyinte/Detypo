@@ -76,16 +76,16 @@ English proofreading detects the following error types:
 ## Docker
 
 ```bash
-docker run -p 8000:8000 poyinte/detypo
+docker run -p 8520:8520 poyinte/detypo
 ```
 
 With API Key *(can also be set inside the app later)*:
 
 ```bash
-docker run -p 8000:8000 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
+docker run -p 8520:8520 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 ```
 
-Then open `http://localhost:8000`.
+Then open `http://localhost:8520`.
 
 ## Windows
 
@@ -93,9 +93,9 @@ Then open `http://localhost:8000`.
 git clone git@github.com:Poyinte/Detypo.git
 cd Detypo
 
-# Double-click detypo.bat (production mode — builds frontend, serves on :8000)
+# Double-click detypo.bat (production mode — builds frontend, serves on :8520)
 # Or from the command line:
-detypo.bat              # Production mode (default), serves on :8000
+detypo.bat              # Production mode (default), serves on :8520
 detypo.bat dev          # Development mode (hot-reload), browser at :5173
 detypo.bat stop         # Stop background services
 ```
