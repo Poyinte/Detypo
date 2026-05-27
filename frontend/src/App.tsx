@@ -160,8 +160,6 @@ export default function App() {
   const [animKey, setAnimKey] = useState(0)
   const cardScrollRef = useRef<HTMLDivElement>(null)
   const cardScrollPos = useRef<Map<number, number>>(new Map())
-  // Card entrance animation — DOM-based, only for newly arrived cards
-  const cardAnimatedIds = useRef<Set<string>>(new Set())
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>(() => {
     const stored = localStorage.getItem('theme')
     if (stored === 'dark' || stored === 'light') return stored
@@ -337,7 +335,7 @@ export default function App() {
       const r = await fetch(`${API}/api/upload`, { method: 'POST', body: fd })
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'upload failed')
       const d = await r.json()
-      setFileId(d.file_id); setPageCount(d.page_count); setErrors([]); setExcludedIds(new Set()); cardAnimatedIds.current.clear()
+      setFileId(d.file_id); setPageCount(d.page_count); setErrors([]); setExcludedIds(new Set())
       setActiveView('list'); setCurrentPage(1)
       setFilename(f.name)
       setPageRange(null)
@@ -363,7 +361,7 @@ export default function App() {
     if (!apiKey) return
     // Set range if not already set (sidebar start button clicked from wizard)
     if (range && !pageRange) setPageRange(range)
-    setErrors([]); setExcludedIds(new Set()); cardAnimatedIds.current.clear(); setCurrentPage(1)
+    setErrors([]); setExcludedIds(new Set()); setCurrentPage(1)
     setTotalTokens(0); setCacheHitTokens(0); setProofCost(0); setShowElapsed(true)
     setShowProgress(true); setProgressPct(0); setDisconnected(false)
     setLogLines([])
@@ -525,7 +523,6 @@ export default function App() {
     setReuploadOpen(false)
     setErrors([])
     setExcludedIds(new Set())
-    cardAnimatedIds.current.clear()
     setFileId(null)
     setPageRange(null)
     setPageCount(0)
@@ -537,41 +534,38 @@ export default function App() {
   const pageErrors = errors.filter(e => e.page === currentPage)
   const currentPageIndex = allPages.indexOf(currentPage)
 
-  // Card entrance animation — only runs for newly arrived error_ids
+  // Card entrance animation — fires on page change or new data (animKey)
   useEffect(() => {
     const el = cardScrollRef.current
     if (!el || activeView !== 'card') return
     const cards = el.querySelectorAll<HTMLElement>('[data-card-id]')
     if (!cards.length) return
-    // Determine which cards are new
-    const newCards: HTMLElement[] = []
+    // Clear previous animation state
     cards.forEach(c => {
-      const id = c.getAttribute('data-card-id')!
-      if (!cardAnimatedIds.current.has(id)) {
-        newCards.push(c)
-        cardAnimatedIds.current.add(id)
-      }
+      c.classList.remove('card-enter')
+      c.style.animationDelay = ''
+      c.style.animationFillMode = ''
     })
-    if (!newCards.length) return
-    // Staggered entrance for new cards
-    const total = Math.min(0.4, newCards.length * 0.03)
-    const step = total / newCards.length
-    newCards.forEach((c, i) => {
+    // Force reflow so removed classes take effect before re-adding
+    void el.offsetHeight
+    // Staggered entrance
+    const total = Math.min(0.4, cards.length * 0.03)
+    const step = total / cards.length
+    cards.forEach((c, i) => {
       c.style.animationDelay = `${i * step}s`
       c.style.animationFillMode = 'backwards'
       c.classList.add('card-enter')
     })
-    // Cleanup after last animation
     const cleanupMs = (total + 0.2) * 1000 + 50
     const timer = setTimeout(() => {
-      newCards.forEach(c => {
+      cards.forEach(c => {
         c.classList.remove('card-enter')
         c.style.animationDelay = ''
         c.style.animationFillMode = ''
       })
     }, cleanupMs)
     return () => clearTimeout(timer)
-  }, [pageErrors, activeView])
+  }, [currentPage, animKey, activeView])
 
   // Restore card view scroll position when navigating between pages
   useEffect(() => {
@@ -611,7 +605,7 @@ export default function App() {
             {themeMode === 'dark' ? <MoonIcon className="size-3.5" /> : themeMode === 'light' ? <SunIcon className="size-3.5" /> : <SunMoonIcon className="size-3.5" />}
           </Button>
           <Separator orientation="vertical" className="mx-0.5 data-[orientation=vertical]:h-4" />
-          <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as ViewType); if (v === 'list') setAnimKey(k => k + 1) }}>
+          <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as ViewType); setAnimKey(k => k + 1) }}>
             <TabsList>
               <TabsTrigger value="list">
                 <ListIcon />{t('header.list')}
