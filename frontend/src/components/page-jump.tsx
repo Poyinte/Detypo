@@ -2,6 +2,7 @@ import * as React from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { CornerDownLeftIcon } from "lucide-react"
+import { useI18n } from "@/i18n"
 
 export function PageJump({
   current,
@@ -20,6 +21,7 @@ export function PageJump({
   side?: "top" | "right" | "bottom" | "left"
   align?: "center" | "start" | "end"
 }) {
+  const { t } = useI18n()
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState("")
 
@@ -36,7 +38,7 @@ export function PageJump({
     <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setValue("") }}>
       <PopoverTrigger asChild>
         <button className={triggerClassName}>
-          {triggerLabel || `第 ${current} / ${total} 页`}
+          {triggerLabel || t('pagination.page', { n: current })}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-48 p-2" side={side} align={side === 'right' ? 'center' : align} sideOffset={8}>

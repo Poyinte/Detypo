@@ -1,6 +1,7 @@
 "use client"
 
 import { type ElementType } from "react"
+import { useI18n } from "@/i18n"
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,7 +20,7 @@ import {
 
 export function NavMain({
   items,
-  groupLabel = "导航",
+  groupLabel,
 }: {
   items: {
     title: string
@@ -37,9 +38,11 @@ export function NavMain({
   }[]
   groupLabel?: string
 }) {
+  const { t } = useI18n()
+  const label = groupLabel || t("nav.docs")
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
