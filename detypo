@@ -4,7 +4,7 @@
 # =============================================================================
 # Usage:
 #   ./detypo              Prod mode (build, serve at :8000) [default]
-#   ./detypo dev           Dev mode (hot-reload, opens :4000)
+#   ./detypo dev           Dev mode (hot-reload, opens :5173)
 #   ./detypo stop          Stop all services
 #
 # Requires: Python 3.10+, Node.js 18+
@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 BACKEND_PORT=8000
-FRONTEND_PORT=4000
+FRONTEND_PORT=5173
 FRONTEND_DIR="frontend"
 
 RED='\033[0;31m'
@@ -184,7 +184,7 @@ case "${1:-prod}" in
     *)
         echo "Usage: ./detypo {prod|dev|stop}"
         echo "  prod  Prod mode (default) — build and serve at :8000"
-        echo "  dev   Dev mode — hot-reload, opens :4000"
+        echo "  dev   Dev mode — hot-reload, opens :5173"
         echo "  stop  Stop all services"
         exit 1
         ;;

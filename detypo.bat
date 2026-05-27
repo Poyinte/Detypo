@@ -7,7 +7,7 @@ setlocal enabledelayedexpansion
 :: =============================================================================
 :: Usage:
 ::   detypo.bat             Prod mode (build, serve at :8000) [default]
-::   detypo.bat dev          Dev mode (hot-reload, opens :4000)
+::   detypo.bat dev          Dev mode (hot-reload, opens :5173)
 ::   detypo.bat stop         Stop all services (dev mode)
 ::
 :: Prod mode: server runs in this window. Ctrl+C or close window to stop.
@@ -17,7 +17,7 @@ setlocal enabledelayedexpansion
 :: =============================================================================
 
 set BACKEND_PORT=8000
-set FRONTEND_PORT=4000
+set FRONTEND_PORT=5173
 
 :: ---- Find Python ----
 set PYTHON=
@@ -108,7 +108,7 @@ set DETYPO_PROD=1
 echo.
 echo [detypo] Server stopped. Cleaning up...
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 taskkill /F /IM python.exe >nul 2>&1
 taskkill /F /IM node.exe >nul 2>&1
 echo [detypo] Done
@@ -149,7 +149,7 @@ if not exist "frontend\node_modules\" (
 
 :: Kill ports
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 :: Start backend
@@ -174,7 +174,7 @@ echo [detypo] WARNING: Backend may not be ready
 echo [detypo] Backend ready
 
 :: Start frontend
-echo [detypo] Starting frontend (127.0.0.1:4000)...
+echo [detypo] Starting frontend (127.0.0.1:5173)...
 start "DetypoFrontend" /B cmd /c "cd /d %CD%\frontend && npm run dev > %TEMP%\detypo-frontend.log 2>&1"
 
 :: Wait for frontend
@@ -183,7 +183,7 @@ set /a _tries=0
 :dev_wait_frontend
 set /a _tries+=1
 if %_tries% gtr 30 goto :dev_frontend_timeout
-curl -s -o nul http://127.0.0.1:4000 2>nul
+curl -s -o nul http://127.0.0.1:5173 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
     goto :dev_wait_frontend
@@ -197,11 +197,11 @@ echo [detypo] Frontend ready
 echo.
 echo ======================================
 echo   Detypo is running (dev)
-echo   URL:  http://127.0.0.1:4000
+echo   URL:  http://127.0.0.1:5173
 echo   Stop: detypo.bat stop
 echo ======================================
 echo.
-start "" "http://127.0.0.1:4000"
+start "" "http://127.0.0.1:5173"
 goto :eof
 
 
@@ -209,7 +209,7 @@ goto :eof
 :do_stop
 echo [detypo] Stopping services...
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4000 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 taskkill /F /IM python.exe >nul 2>&1
 taskkill /F /IM node.exe >nul 2>&1
 echo [detypo] Stopped

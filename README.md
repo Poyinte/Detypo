@@ -81,7 +81,7 @@ cd Detypo
 # 双击 detypo.bat（生产模式，构建前端后统一服务）
 # 或在 CMD 中：
 detypo.bat              # 生产模式（默认），服务在 :8000
-detypo.bat dev          # 开发模式（热重载），浏览器打开 :4000
+detypo.bat dev          # 开发模式（热重载），浏览器打开 :5173
 detypo.bat stop         # 停止后台服务
 ```
 
