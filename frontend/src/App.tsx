@@ -43,7 +43,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 
-const VERSION = 'v1.0.199' + (import.meta.env.DEV ? '-dev' : '')
+const VERSION = 'v1.1.0' + (import.meta.env.DEV ? '-dev' : '')
 
 type ViewType = 'list' | 'card'
 
