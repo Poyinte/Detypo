@@ -15,7 +15,9 @@ from core.pdf_engine import PdfEngine
 from core.text_annotator import TextAnnotator
 from core.llm_client import LlmClient
 from core.proofreader import Proofreader
-from utils.config import UPLOAD_DIR, RULES_FILE, CATEGORY_COLORS, CATEGORY_HEX, HOST, PORT, DEEPSEEK_BASE_URL, MODEL_NAME, DEEPSEEK_API_KEY
+from utils.config import UPLOAD_DIR, RULES_DIR, LANGUAGES_JSON, HOST, PORT, DEEPSEEK_BASE_URL, MODEL_NAME, DEEPSEEK_API_KEY
+
+from core.language_profile import load_profiles, detect_language, hex_to_rgb
 
 import requests
 from pydantic import BaseModel
@@ -35,9 +37,13 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 sessions: dict[str, dict] = {}
 
 
+# Language profiles — loaded once at startup
+LANGUAGE_PROFILES: dict = load_profiles(RULES_DIR, LANGUAGES_JSON)
+
+
 def _load_rules() -> str:
-    with open(RULES_FILE, "r", encoding="utf-8") as f:
-        return f.read()
+    """Legacy helper — returns Chinese rules content. Kept for minimal compat."""
+    return LANGUAGE_PROFILES["zh"].rules_content
 
 
 @app.post("/api/upload")
@@ -58,11 +64,16 @@ async def upload_pdf(file: UploadFile = File(...)):
     page_count = engine.page_count
 
     # Extract text from all pages, count tokens with offline tokenizer
-    from utils.token_counter import tokens_per_page
     page_texts = []
     for p in range(page_count):
         page_texts.append(engine.get_page_plain_text(p))
     engine.close()
+
+    from utils.token_counter import tokens_per_page
+    page_token_counts = tokens_per_page(page_texts)
+    total_text_tokens = sum(page_token_counts)
+
+    detected_lang = detect_language(page_texts)
 
     sessions[file_id] = {
         "path": file_path,
@@ -72,16 +83,16 @@ async def upload_pdf(file: UploadFile = File(...)):
         "errors": [],
         "proofreader": None,
         "engine": None,
+        "detected_lang": detected_lang,
     }
-    from utils.token_counter import tokens_per_page
-    page_token_counts = tokens_per_page(page_texts)
-    total_text_tokens = sum(page_token_counts)
     return {
         "file_id": file_id,
         "page_count": page_count,
         "filename": file.filename,
         "page_token_counts": page_token_counts,
         "total_text_tokens": total_text_tokens,
+        "detected_lang": detected_lang,
+        "languages": {code: p.name for code, p in LANGUAGE_PROFILES.items()},
     }
 
 
@@ -143,8 +154,12 @@ async def proofread_stream(
         engine.close()
         raise HTTPException(400, "请先在设置中配置有效的 DeepSeek API Key")
     llm = LlmClient(api_key=api_key)
-    rules = _load_rules()
-    proofreader = Proofreader(engine, annotator, llm, rules)
+    # Determine proofreading language
+    lang = request.query_params.get("lang") or session.get("detected_lang", "zh")
+    if lang not in LANGUAGE_PROFILES:
+        lang = "zh"
+    profile = LANGUAGE_PROFILES[lang]
+    proofreader = Proofreader(engine, annotator, llm, profile)
 
     session["engine"] = engine
     session["proofreader"] = proofreader
@@ -237,8 +252,13 @@ async def export_pdf(file_id: str, body: ExportRequest):
     for err in errors:
         if err.get("error_id") in exclude_set:
             continue
-        category = err.get("category", "用字错误")
-        color = CATEGORY_COLORS.get(category, CATEGORY_COLORS["用字错误"])
+        lang = session.get("detected_lang", "zh")
+        profile = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["zh"])
+        default_cat = list(profile.categories.keys())[0]
+        default_hex = list(profile.categories.values())[0]
+        category = err.get("category", default_cat)
+        hex_color = profile.categories.get(category, default_hex)
+        color = hex_to_rgb(hex_color)
         bbox = tuple(err.get("bbox", [0, 0, 0, 0]))
         page_idx = err.get("page", 1) - 1
         reason = err.get("reason", "")
@@ -323,6 +343,17 @@ async def get_balance(body: ApiKeyCheck):
         return {"balance": "0", "error": resp.text[:200]}
     except Exception as e:
         return {"balance": "0", "error": str(e)}
+
+
+@app.get("/api/languages")
+async def get_languages():
+    return {
+        code: {
+            "name": p.name,
+            "categories": p.categories,
+        }
+        for code, p in LANGUAGE_PROFILES.items()
+    }
 
 
 def _get_api_key_from_request(request) -> str:
