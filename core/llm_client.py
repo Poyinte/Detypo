@@ -46,14 +46,15 @@ class LlmClient:
             return False
 
     @staticmethod
-    def _filter_false_positives(errors: list[dict]) -> list[dict]:
+    def _filter_false_positives(errors: list[dict], lang_code: str = "zh") -> list[dict]:
         """Filter out LLM responses that are false positives:
         - original == correction (no actual change)
         - reason indicates no error
         - original is too long (likely a whole paragraph with no real error)
         - empty original or correction
         """
-        FALSE_REASONS = ["无错误", "使用正确", "无误", "正确用法", "或使用正确", "没有错误"]
+        from core.language_profile import FALSE_REASONS
+        false_reasons = FALSE_REASONS.get(lang_code, FALSE_REASONS["zh"])
         filtered = []
         for err in errors:
             original = err.get("original", "").strip()
@@ -64,35 +65,26 @@ class LlmClient:
                 continue
             if original == correction:
                 continue
-            if any(kw in reason for kw in FALSE_REASONS):
+            if any(kw in reason for kw in false_reasons):
                 continue
             if len(original) > 200:
                 continue
             filtered.append(err)
         return filtered
 
-    def proofread(self, annotated_text: str, rules_content: str) -> list[dict]:
+    def proofread(self, annotated_text: str, profile) -> tuple[list[dict], dict]:
         self._ensure_key()
-        system_prompt = (
-            "你是一名专业的图书校对员。请严格按照以下校对规则对用户提供的文本进行校对。\n\n"
-            f"{rules_content}\n\n"
-            "重要提示：\n"
-            "1. 文本中的 [#NNNN] 是文本块位置标识符，不是正文内容，不要校对这些 ID。\n"
-            "2. category 必须是以下值之一：用字错误、用词不当、语法错误、标点符号、数字用法、政治敏感\n"
-            "3. 只返回确实有错误的条目。原文正确则不要编造条目。\n"
-            "4. original 和 correction 必须不同，correction 必须是正确的修改建议。\n"
-            "5. 每个 original 控制在 50 字以内，精确指向错误位置，不要整段返回。\n\n"
-            "你必须严格输出如下 JSON 格式，不要包含任何其他内容：\n"
-            '{"errors": [{"error_id": "#0001", "original": "错字", "correction": "正字", "category": "用字错误", "reason": "原因"}]}\n'
-            '如果没有发现任何错误，请输出：{"errors": []}'
+        user_content = (
+            f"请校对以下文本：\n\n{annotated_text}" if profile.code == "zh"
+            else f"Please proofread the following text:\n\n{annotated_text}"
         )
         payload = {
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": 4096,
             "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"请校对以下文本：\n\n{annotated_text}"},
+                {"role": "system", "content": profile.system_prompt},
+                {"role": "user", "content": user_content},
             ],
             "response_format": {"type": "json_object"},
         }
@@ -140,7 +132,7 @@ class LlmClient:
 
         try:
             errors = json.loads(content).get("errors", [])
-            return self._filter_false_positives(errors), usage
+            return self._filter_false_positives(errors, profile.code), usage
         except json.JSONDecodeError:
             text = content.strip()
             if text.startswith("```json"):
@@ -151,6 +143,6 @@ class LlmClient:
                 text = text[:-3]
             try:
                 errors = json.loads(text.strip()).get("errors", [])
-                return self._filter_false_positives(errors), usage
+                return self._filter_false_positives(errors, profile.code), usage
             except json.JSONDecodeError:
                 return [], usage
