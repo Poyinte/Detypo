@@ -60,17 +60,6 @@ export const schema = z.object({
   bbox: z.array(z.number()),
 })
 
-export const CATEGORIES = ['用字错误', '用词不当', '语法错误', '标点符号', '数字用法', '政治敏感'] as const
-
-const CAT_BADGE: Record<string, string> = {
-  '用字错误': 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
-  '用词不当': 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  '语法错误': 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  '标点符号': 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
-  '数字用法': 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-  '政治敏感': 'bg-pink-50 text-pink-700 dark:bg-pink-950 dark:text-pink-300',
-}
-
 export function DataTable({
   data,
   excludedIds,
@@ -81,6 +70,9 @@ export function DataTable({
   onCategoryFiltersChange,
   animKey,
   loading,
+  categories,
+  categoryColors,
+  t,
 }: {
   data: z.infer<typeof schema>[]
   excludedIds: Set<string>
@@ -91,6 +83,9 @@ export function DataTable({
   onCategoryFiltersChange: (f: Set<string>) => void
   animKey?: number
   loading?: boolean
+  categories: string[]
+  categoryColors: Record<string, string>
+  t: (key: string, vars?: Record<string, string | number>) => string
 }) {
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -108,7 +103,7 @@ export function DataTable({
   }, [data])
 
   // Internal visibility filter (header dropdown) — defaults to all categories in data
-  const [categoryVis, setCategoryVis] = React.useState<Set<string>>(new Set(CATEGORIES))
+  const [categoryVis, setCategoryVis] = React.useState<Set<string>>(new Set(categories))
   const categoryVisRef = React.useRef(categoryVis)
   categoryVisRef.current = categoryVis  // sync ref synchronously for stable column headers
   React.useEffect(() => {
@@ -224,7 +219,7 @@ export function DataTable({
     },
     {
       accessorKey: "page",
-      header: () => <span className="flex justify-center">页码</span>,
+      header: () => <span className="flex justify-center">{t('table.page')}</span>,
       cell: ({ row }) => (
         <div className="text-center">
           <span className="font-medium tabular-nums">{row.original.page}</span>
@@ -241,15 +236,15 @@ export function DataTable({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
-              类别<ChevronDownIcon className="size-3" />
+              {t('table.category')}<ChevronDownIcon className="size-3" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center" className="w-44">
             <DropdownMenuLabel className="flex items-center justify-between">
-              <span>显示类别</span>
+              <span>{t('table.show_categories')}</span>
               <div className="flex items-center gap-2">
-                <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => setCategoryVis(new Set())}>清空</span>
-                <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => setCategoryVis(new Set(categoriesInData))}>全选</span>
+                <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => setCategoryVis(new Set())}>{t('table.clear')}</span>
+                <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => setCategoryVis(new Set(categoriesInData))}>{t('table.select_all')}</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -267,19 +262,22 @@ export function DataTable({
         </DropdownMenu>
         </div>
       ),
-      cell: ({ row }) => (
-        <div className="flex justify-center">
-          <Badge className={(CAT_BADGE[row.original.category] || '') + ' text-[10px]'}>
-            {row.original.category}
-          </Badge>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const hex = categoryColors[row.original.category] || '#888'
+        return (
+          <div className="flex justify-center">
+            <Badge style={{ backgroundColor: `${hex}1a`, color: hex }} className="text-[10px]">
+              {row.original.category}
+            </Badge>
+          </div>
+        )
+      },
       size: 96,
       minSize: 96,
     },
     {
       id: "correction",
-      header: "修改建议",
+      header: t('table.correction'),
       cell: ({ row }) => (
         <div className="whitespace-normal">
           <span className="text-muted-foreground line-through">{row.original.original}</span>
@@ -290,12 +288,12 @@ export function DataTable({
     },
     {
       accessorKey: "reason",
-      header: "修改理由",
+      header: t('table.reason'),
       cell: ({ row }) => (
         <span className="text-muted-foreground whitespace-normal">{row.original.reason}</span>
       ),
     },
-  ], [categoriesInData])
+  ], [categoriesInData, t, categoryColors])
 
   const table = useReactTable({
     data: filteredData,
@@ -479,20 +477,20 @@ export function DataTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8">
-                <Columns3Icon data-icon="inline-start" />栏目
+                <Columns3Icon data-icon="inline-start" />{t('table.columns')}
                 <ChevronDownIcon data-icon="inline-end" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
-              <DropdownMenuLabel>选择栏目</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('table.select_columns')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {table.getAllColumns().filter(c => typeof c.accessorFn !== "undefined" && c.getCanHide())
                 .map(column => (
                   <DropdownMenuCheckboxItem key={column.id} checked={column.getIsVisible()}
                     onCheckedChange={(v) => column.toggleVisibility(!!v)}
                     onSelect={(e) => e.preventDefault()}>
-                    {column.id === 'category' ? '类别' : column.id === 'page' ? '页码' :
-                     column.id === 'reason' ? '理由' : column.id === 'correction' ? '原文→修改' : column.id}
+                    {column.id === 'category' ? t('table.category') : column.id === 'page' ? t('table.page') :
+                     column.id === 'reason' ? t('table.reason') : column.id === 'correction' ? t('table.original_correction') : column.id}
                   </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
@@ -502,16 +500,16 @@ export function DataTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8">
-                <FilterIcon data-icon="inline-start" />筛选
+                <FilterIcon data-icon="inline-start" />{t('table.category_filter')}
                 <ChevronDownIcon data-icon="inline-end" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-44">
               <DropdownMenuLabel className="flex items-center justify-between">
-                <span>保留类别</span>
+                <span>{t('table.keep_categories')}</span>
                 <div className="flex items-center gap-2">
-                  <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={clearCategories}>清空</span>
-                  <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={selectAllCategories}>全选</span>
+                  <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={clearCategories}>{t('table.clear')}</span>
+                  <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={selectAllCategories}>{t('table.select_all')}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -532,24 +530,24 @@ export function DataTable({
 
           {data.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              共计 {data.length - excludedCount} 条
+              {t('table.total', { count: data.length - excludedCount })}
             </span>
           )}
           {totalCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              选中 {selectedCount}/{totalCount} 条
+              {t('table.selected', { selected: selectedCount, total: totalCount })}
             </span>
           )}
           {excludedCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              剔除 {excludedCount} 条
+              {t('table.excluded', { count: excludedCount })}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">每页</span>
+            <span className="text-xs text-muted-foreground">{t('table.per_page')}</span>
             <Select value={`${table.getState().pagination.pageSize}`}
               onValueChange={(v) => table.setPageSize(Number(v))}>
               <SelectTrigger size="sm" className="w-16 h-7">
@@ -563,7 +561,7 @@ export function DataTable({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <span className="text-xs text-muted-foreground">条</span>
+            <span className="text-xs text-muted-foreground">{t('table.items')}</span>
           </div>
           <PageJump
             current={table.getState().pagination.pageIndex + 1}
@@ -652,7 +650,7 @@ export function DataTable({
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
-                    暂无问题条目
+                    {t('table.no_results')}
                   </TableCell>
                 </TableRow>
               )}
@@ -671,14 +669,14 @@ export function DataTable({
         <DropdownMenuContent className="w-40">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onBatchExcludeSelected}>
-              <XIcon />剔除选中
+              <XIcon />{t('table.exclude_selected')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onBatchRestoreSelected}>
-              <Undo2Icon />恢复选中
+              <Undo2Icon />{t('table.restore_selected')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onBatchDeselect}>
-              <MinusIcon />取消选中
+              <MinusIcon />{t('table.deselect')}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
