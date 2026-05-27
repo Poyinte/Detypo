@@ -37,12 +37,12 @@ Chinese proofreading detects the following error types:
 
 | Category | Examples |
 | :--- | :--- |
-| 用字错误 | Visually similar / homophone / near-homophone misuse, nonstandard glyphs (traditional characters, variant forms, old字形) |
-| 用词不当 | Variant-form / near-synonym misuse, idiom errors, invented words / dialect / loanwords, nonstandard abbreviations |
-| 语法错误 | Wrong part of speech, missing sentence components, improper collocation, mixed constructions, ambiguity, illogical quantity expressions |
-| 标点符号 | Misuse of commas, enumeration commas, semicolons, quotation marks, book-title marks, ellipses, em/en dashes, hyphens, colons, question marks, exclamation marks, etc. |
-| 数字用法 | Nonstandard use of Arabic vs. Chinese numerals, approximate numbers, measurement units |
-| 政治敏感 | Politically sensitive expressions, violations of applicable laws and regulations |
+| 用字错误 | 形近 / 同音 / 近音误用、使用字形不规范（繁体字 / 异体字 / 旧字形） |
+| 用词不当 | 异形词 / 形近词误用、成语误用、生造词 / 方言词 / 外来词、缩略语等使用不规范 |
+| 语法错误 | 词性误用、成分残缺、搭配不当、句式杂糅、歧义、数量表达混乱 |
+| 标点符号 | 逗号 / 顿号 / 分号、引号、书名号、省略号 / 破折号 / 连接号、冒号 / 问号 / 叹号等误用 |
+| 数字用法 | 阿拉伯数字与汉字数字使用、概数表达、计量单位等使用不规范 |
+| 政治敏感 | 政治敏感表达、违反相关法律法规 |
 
 <sub>See [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md)</sub>
 
