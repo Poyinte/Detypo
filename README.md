@@ -129,9 +129,13 @@ chmod +x detypo
 
 ---
 
-# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 添加新语种
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 添加新语种
 
-1. 在 [`rules/`](rules/) 目录下创建 `proofreading-rules-{code}.md`（如 `proofreading-rules-fr.md`），写入该语种的校对规则
+**CLI 一键添加**：使用 `/add-language` 命令，传入语种代码和规则来源（PDF / 网址 / 让 AI 自行归纳），自动生成规则文件并注册到 [`rules/languages.json`](rules/languages.json)。
+
+**手动添加**：
+
+1. 在 [`rules/`](rules/) 目录下创建 `proofreading-rules-{code}.md`，写入该语种的校对规则
 2. 在 [`rules/languages.json`](rules/languages.json) 中添加对应条目：
 
 ```json
@@ -143,12 +147,12 @@ chmod +x detypo
     "Ponctuation": "#45D46E",
     "Nombres": "#D4A86E"
   },
-  "system_prompt": "You are a professional copyeditor...\n\n{rules}\n\n{categories}...",
+  "system_prompt": "Vous êtes un correcteur professionnel...\n\n{rules}\n\n...\ncategory must be one of: {categories}...",
   "false_reasons": ["correct", "pas d'erreur"]
 }
 ```
 
-3. 可选：添加 `system_prompt`（系统提示词模板，支持 `{rules}` 和 `{categories}` 占位符）和 `false_reasons`（误报过滤关键词）。不提供则使用内置英文默认值
+3. `system_prompt`（必填，支持 `{rules}` 和 `{categories}` 占位符）和 `false_reasons`（选填，不提供则使用英文默认值）
 4. 重启服务即可生效
 
 > [!NOTE]
