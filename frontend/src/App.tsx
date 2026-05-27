@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/pagination'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
-import { DataTable, CATEGORIES } from '@/components/data-table'
+import { DataTable } from '@/components/data-table'
+import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ListIcon, LayoutGridIcon, MoonIcon, SunIcon, SunMoonIcon } from 'lucide-react'
@@ -56,14 +57,6 @@ interface ErrorItem {
   bbox: number[]
 }
 
-const CAT_BADGE: Record<string, string> = {
-  '用字错误': 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
-  '用词不当': 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  '语法错误': 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  '标点符号': 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
-  '数字用法': 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-  '政治敏感': 'bg-pink-50 text-pink-700 dark:bg-pink-950 dark:text-pink-300',
-}
 
 function esc(s: string) {
   const d = document.createElement('div')
@@ -160,7 +153,7 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [errors.length])
 
-  const [categoryFilters, setCategoryFilters] = useState<Set<string>>(new Set(CATEGORIES))
+  const [categoryFilters, setCategoryFilters] = useState<Set<string>>(new Set())
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
   const [cacheHitTokens, setCacheHitTokens] = useState(0)
   const [modelName, setModelName] = useState('')
@@ -174,6 +167,25 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(themeMode === 'system' ? systemDark : themeMode === 'dark')
   const [keyStatus, setKeyStatus] = useState('')
   const [keyOk, setKeyOk] = useState(false)
+
+  // UI language
+  const { t, uiLang } = useI18n()
+
+  // Proofreading language
+  const [proofLang, setProofLang] = useState<string>('auto')
+  const [detectedLang, setDetectedLang] = useState<string>('zh')
+  const [availableLangs, setAvailableLangs] = useState<Record<string, string>>({})
+
+  // Language-specific categories and colors (from API)
+  const [langCategories, setLangCategories] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const cats = Object.keys(langCategories)
+    if (cats.length > 0) {
+      setCategoryFilters(new Set(cats))
+    }
+  }, [langCategories])
+
   useEffect(() => {
     if (keyOk) {
       const t = setTimeout(() => setKeyOk(false), 1000)
@@ -330,7 +342,17 @@ export default function App() {
       setFilename(f.name)
       setPageRange(null)
       setPageTokenCounts(d.page_token_counts || [])
+      if (d.detected_lang) setDetectedLang(d.detected_lang)
+      if (d.languages) setAvailableLangs(d.languages)
       pushLog('ready')
+      fetch(`${API}/api/languages`)
+        .then(r => r.json())
+        .then(langData => {
+          const lang = d.detected_lang || 'zh'
+          if (langData[lang]) {
+            setLangCategories(langData[lang].categories)
+          }
+        }).catch(() => {})
     } catch (e: unknown) { pushLog(`upload error: ${(e as Error)?.message || String(e)}`) }
   }
 
@@ -364,6 +386,7 @@ export default function App() {
     try {
       const url = new URL(`${API}/api/proofread/${fileId}`)
       url.searchParams.set('token', apiKey)
+      url.searchParams.set('lang', proofLang === 'auto' ? detectedLang : proofLang)
       if (range) {
         url.searchParams.set('start_page', String(range[0]))
         url.searchParams.set('end_page', String(range[1]))
@@ -542,10 +565,10 @@ export default function App() {
           <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as ViewType); if (v === 'list') setAnimKey(k => k + 1) }}>
             <TabsList>
               <TabsTrigger value="list">
-                <ListIcon />列表
+                <ListIcon />{t('header.list')}
               </TabsTrigger>
               <TabsTrigger value="card">
-                <LayoutGridIcon />卡片
+                <LayoutGridIcon />{t('header.card')}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -585,6 +608,9 @@ export default function App() {
                   onCategoryFiltersChange={setCategoryFilters}
                   animKey={animKey}
                   loading={showElapsed && errors.length === 0}
+                  categories={Object.keys(langCategories)}
+                  categoryColors={langCategories}
+                  t={t}
                 />
               </div>
               <div className={activeView === 'card' ? 'flex flex-1 flex-col' : 'hidden'}>
@@ -608,23 +634,23 @@ export default function App() {
                           setCurrentPage(nearest)
                         }}
                         triggerClassName="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                        triggerLabel={`PDF 第 ${currentPage} 页`}
+                        triggerLabel={t('pagination.page', { n: currentPage })}
                         side="right"
                       />
                     )}
                   </div>
                   <div className="justify-self-center">
                   {!showElapsed && allPages.length === 0 ? (
-                    <span className="text-xs text-muted-foreground py-1">暂无问题页面</span>
+                    <span className="text-xs text-muted-foreground py-1">{t('pagination.no_errors')}</span>
                   ) : (
                     <Pagination>
                       <PaginationContent>
                         <PaginationItem>
                           <PaginationPrevious
-                            text="上一页"
+                            text={t('pagination.prev')}
                             onClick={() => {
                               if (currentPageIndex <= 0) {
-                                toast.info('已是第一页', { position: 'top-right' })
+                                toast.info(t('pagination.first'), { position: 'top-right' })
                                 return
                               }
                               setCurrentPage(allPages[currentPageIndex - 1])
@@ -676,10 +702,10 @@ export default function App() {
                           })
                         })()}
                         <PaginationNext
-                          text="下一页"
+                          text={t('pagination.next')}
                           onClick={() => {
                             if (currentPageIndex >= allPages.length - 1) {
-                              toast.info('已是最后一页', { position: 'top-right' })
+                              toast.info(t('pagination.last'), { position: 'top-right' })
                               return
                             }
                             setCurrentPage(allPages[currentPageIndex + 1])
@@ -721,7 +747,7 @@ export default function App() {
                             size="sm"
                           >
                             <CardHeader className="flex flex-col flex-1">
-                              <Badge className={(CAT_BADGE[e.category] || '') + ' text-[10px]'}>
+                              <Badge className={(langCategories[e.category] || '') + ' text-[10px]'}>
                                 {esc(e.category)}
                               </Badge>
                               <CardTitle className="text-xs font-normal my-auto">
