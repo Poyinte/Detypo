@@ -129,7 +129,7 @@ chmod +x detypo
 
 ---
 
-# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 添加新语种
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/languages-dark.svg"><img src="./docs/icons/languages.svg" height="28" align="absmiddle"></picture> 添加新语种
 
 **CLI 一键添加**：使用 `/add-language` 命令，传入语种代码和规则来源（PDF / 网址 / 让 AI 自行归纳），自动生成规则文件并注册到 [`rules/languages.json`](rules/languages.json)。
 
