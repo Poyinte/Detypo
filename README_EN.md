@@ -1,5 +1,6 @@
 <a href="https://www.gnu.org/licenses/agpl-3.0.html"><img src="https://www.gnu.org/graphics/agplv3-155x51.png" alt="AGPL v3" align="left"></a>
 <div align="right"><a href="README.md">中文</a> | <b>English</b></div>
+<br clear="all">
 <br>
 <div align="center">
 <p>
