@@ -57,6 +57,11 @@ npm run lint                              # ESLint
 
 ## Architecture
 
+**Ports**: Backend default `8000`, frontend dev `5173`. Avoid `3000` and `4000` — both fall in Windows excluded port ranges (2991–3090 and 3966–4065). Port config lives in:
+- `utils/config.py` → `HOST` / `PORT` (backend)
+- `frontend/vite.config.ts` → `server.port` + `proxy` target
+- `detypo.bat` / `detypo` → `BACKEND_PORT` / `FRONTEND_PORT`
+
 **Proofreading pipeline**: Pages → batch → extract text → inject `[#NNNN]` span IDs → send to DeepSeek LLM → resolve IDs → add colored annotations → incremental save.
 
 **CJK text splitting**: Split into ~6-char micro-segments with proportionally-split bounding boxes. Punctuation merged into preceding segment.
@@ -64,6 +69,8 @@ npm run lint                              # ESLint
 **SSE streaming**: Events: `extracting`, `llm_waiting`, `batch_done`, `page_done`, `complete`, `proofread_error`, `stopped`.
 
 **Frontend** (`App.tsx`): Single component with `useState`. shadcn/ui components. Dark mode via CSS variables + `oklch()`.
+
+**Sidebar** (`app-sidebar.tsx`): Uses shadcn sidebar (`collapsible="icon"`). Navigation via `NavMain` which renders `SidebarGroup` with a configurable `groupLabel` and accepts `ElementType` icons (Lucide or custom SVG). Disabled buttons won't show tooltips in collapsed mode — the HTML `disabled` attribute blocks browser mouse events. Sidebar group labels use `pointer-events-none` in collapsed state to avoid intercepting hover on menu items.
 
 **API key**: Stored in `localStorage`, sent as `?token=` query param. First-visit dialog if no key detected.
 
