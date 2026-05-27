@@ -588,7 +588,7 @@ export default function App() {
           onChange={e => { const f = e.target.files?.[0]; if (f) { upload(f); e.target.value = '' } }} />
 
         {/* ── CONTENT ── */}
-        <div className="flex-1 flex flex-col overflow-clip">
+        <div className="flex-1 flex flex-col min-h-0">
           {!pageRange ? (
             <PdfUploadWizard
               key={fileId || 'no-file'}
@@ -625,7 +625,7 @@ export default function App() {
                   t={t}
                 />
               </div>
-              <div className={activeView === 'card' ? 'flex flex-1 flex-col' : 'hidden'}>
+              <div className={activeView === 'card' ? 'flex flex-1 flex-col min-h-0' : 'hidden'}>
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-1.5 bg-card shrink-0 min-h-9">
                   {showElapsed ? null : (
@@ -760,7 +760,7 @@ export default function App() {
                             key={e.error_id}
                             className={cn(
                               'relative cursor-pointer transition-all duration-200 border hover:shadow-lg hover:-translate-y-1 hover:z-10',
-                              ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : 'animate-in fade-in duration-150'
+                              ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : 'card-enter'
                             )}
                             style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 120px' }}
                             onClick={() => toggleExclude(e.error_id)}

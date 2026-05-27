@@ -187,6 +187,9 @@ body {
 .table-row-enter {
   animation: fade-in-up 0.25s ease-out both;
 }
+.card-enter {
+  animation: fade-in-up 0.18s ease-out both;
+}
 .table-row-enter-dim {
   animation: fade-in-up-dim 0.25s ease-out both;
 }
