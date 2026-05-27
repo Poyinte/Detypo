@@ -158,6 +158,8 @@ export default function App() {
   const [cacheHitTokens, setCacheHitTokens] = useState(0)
   const [modelName, setModelName] = useState('')
   const [animKey, setAnimKey] = useState(0)
+  const cardScrollRef = useRef<HTMLDivElement>(null)
+  const cardScrollPos = useRef<Map<number, number>>(new Map())
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>(() => {
     const stored = localStorage.getItem('theme')
     if (stored === 'dark' || stored === 'light') return stored
@@ -530,6 +532,14 @@ export default function App() {
   const pageErrors = errors.filter(e => e.page === currentPage)
   const currentPageIndex = allPages.indexOf(currentPage)
 
+  // Restore card view scroll position when navigating between pages
+  useEffect(() => {
+    const el = cardScrollRef.current
+    if (!el || activeView !== 'card') return
+    const saved = cardScrollPos.current.get(currentPage) || 0
+    requestAnimationFrame(() => { el.scrollTop = saved })
+  }, [currentPage, activeView, pageErrors.length])
+
   // Default to first error page on initial data load
   const prevPageCountRef = useRef(0)
   useEffect(() => {
@@ -721,7 +731,14 @@ export default function App() {
                   </>
                   )}
                 </div>
-                <div className="flex-1 min-h-0 px-4 pt-4 pb-5 overflow-y-scroll" data-slot="custom-scroll">
+                <div
+                  className="flex-1 min-h-0 px-4 pt-4 pb-5 overflow-y-auto"
+                  ref={cardScrollRef}
+                  onScroll={() => {
+                    const el = cardScrollRef.current
+                    if (el) cardScrollPos.current.set(currentPage, el.scrollTop)
+                  }}
+                >
                   <div style={{ minHeight: 'calc(100% + 1px)' }}>
                   {showElapsed ? (
                     <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -737,19 +754,23 @@ export default function App() {
                     <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 xl:grid-cols-4">
                       {pageErrors.map(e => {
                         const ex = excludedIds.has(e.error_id)
+                        const hex = langCategories[e.category] || '#888'
                         return (
                           <Card
                             key={e.error_id}
                             className={cn(
-                              'relative cursor-pointer transition-all duration-300 border hover:shadow-lg hover:-translate-y-1 hover:z-10',
-                              ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : 'animate-in fade-in slide-in-from-bottom-2'
+                              'relative cursor-pointer transition-all duration-200 border hover:shadow-lg hover:-translate-y-1 hover:z-10',
+                              ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : ''
                             )}
-                            style={ex ? undefined : { animationDelay: `${pageErrors.indexOf(e) * 25}ms`, animationFillMode: 'backwards' }}
+                            style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 120px' }}
                             onClick={() => toggleExclude(e.error_id)}
                             size="sm"
                           >
                             <CardHeader className="flex flex-col flex-1">
-                              <Badge className={(langCategories[e.category] || '') + ' text-[10px]'}>
+                              <Badge
+                                style={{ backgroundColor: `${hex}1a`, color: hex }}
+                                className="text-[10px]"
+                              >
                                 {esc(e.category)}
                               </Badge>
                               <CardTitle className="text-xs font-normal my-auto">
