@@ -181,8 +181,12 @@ class Proofreader:
             page_nums = result["page_nums"]
 
             resolved = []
+            seen = set()  # safety net: skip duplicate span IDs
             for err in llm_errors:
                 err_id = err.get("error_id", "").strip()
+                if err_id in seen:
+                    continue
+                seen.add(err_id)
                 info = self._annotator.lookup(err_id)
                 if info is None:
                     continue
