@@ -409,4 +409,5 @@ if __name__ == "__main__":
     log_config["formatters"]["access"]["use_colors"] = False
     # Prod mode: single process (no reload worker that survives window close)
     use_reload = os.getenv("DETYPO_PROD", "0") != "1"
-    uvicorn.run("server:app", host=HOST, port=PORT, reload=use_reload, log_config=log_config, reload_dirs=[str(Path(__file__).parent)])
+    reload_dirs = [str(Path(__file__).parent / d) for d in ("core", "utils", "rules")] + [str(Path(__file__))]
+    uvicorn.run("server:app", host=HOST, port=PORT, reload=use_reload, log_config=log_config, reload_dirs=reload_dirs)
