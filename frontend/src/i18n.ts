@@ -36,6 +36,7 @@ const translations: Record<UILang, Record<string, string>> = {
     'pagination.first': '已是第一页',
     'pagination.last': '已是最后一页',
     'pagination.page': 'PDF 第 {n} 页',
+    'pagination.jump_placeholder': '请输入页码...',
     'pagination.no_errors': '暂无问题页面',
 
     // Data table
@@ -131,6 +132,7 @@ const translations: Record<UILang, Record<string, string>> = {
     'pagination.first': 'Already on first page',
     'pagination.last': 'Already on last page',
     'pagination.page': 'PDF Page {n}',
+    'pagination.jump_placeholder': 'Jump to page...',
     'pagination.no_errors': 'No issues found',
 
     // Data table

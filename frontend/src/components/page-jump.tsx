@@ -47,7 +47,7 @@ export function PageJump({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleJump() }}
-            placeholder="请输入页码..."
+            placeholder={t('pagination.jump_placeholder')}
             className="h-8 text-sm pr-8"
           />
           <button
