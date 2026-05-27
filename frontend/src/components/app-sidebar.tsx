@@ -54,7 +54,7 @@ export function AppSidebar({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftKey(apiKey)
     }
-  }, [keyStatus, keyOk, apiKey])
+  }, [keyStatus, keyOk, apiKey, t])
 
   const navMain = [
     {

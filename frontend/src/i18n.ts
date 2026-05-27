@@ -105,7 +105,7 @@ function loadUILang(): UILang {
   try {
     const stored = localStorage.getItem('ui_lang')
     if (stored === 'zh' || stored === 'en') return stored
-  } catch {}
+  } catch { /* localStorage unavailable */ }
   // Fall back to browser language
   if (typeof navigator !== 'undefined' && navigator.language?.startsWith('zh')) return 'zh'
   return 'en'
@@ -120,7 +120,7 @@ export function getUILang(): UILang {
 
 export function setUILang(lang: UILang) {
   _globalLang = lang
-  try { localStorage.setItem('ui_lang', lang) } catch {}
+  try { localStorage.setItem('ui_lang', lang) } catch { /* localStorage unavailable */ }
   _listeners.forEach(fn => fn())
 }
 

@@ -170,21 +170,17 @@ export default function App() {
 
   // UI language
   const { t, uiLang } = useI18n()
+  void uiLang // used by child components via context; silence unused-var for now
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('auto')
+  void setProofLang // wired to future UI dropdown
   const [detectedLang, setDetectedLang] = useState<string>('zh')
   const [availableLangs, setAvailableLangs] = useState<Record<string, string>>({})
+  void availableLangs // wired to future UI dropdown
 
   // Language-specific categories and colors (from API)
   const [langCategories, setLangCategories] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    const cats = Object.keys(langCategories)
-    if (cats.length > 0) {
-      setCategoryFilters(new Set(cats))
-    }
-  }, [langCategories])
 
   useEffect(() => {
     if (keyOk) {
@@ -350,7 +346,9 @@ export default function App() {
         .then(langData => {
           const lang = d.detected_lang || 'zh'
           if (langData[lang]) {
-            setLangCategories(langData[lang].categories)
+            const cats = langData[lang].categories
+            setLangCategories(cats)
+            setCategoryFilters(new Set(Object.keys(cats)))
           }
         }).catch(() => {})
     } catch (e: unknown) { pushLog(`upload error: ${(e as Error)?.message || String(e)}`) }
