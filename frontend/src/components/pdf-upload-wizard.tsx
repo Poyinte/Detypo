@@ -5,15 +5,15 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
   Empty, EmptyContent, EmptyDescription, EmptyHeader,
   EmptyMedia, EmptyTitle,
 } from '@/components/ui/empty'
-import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIcon, XIcon, ChevronDownIcon } from 'lucide-react'
+import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIcon, XIcon, ChevronDownIcon, CheckIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useI18n } from '@/i18n'
 
@@ -259,7 +259,7 @@ export function PdfUploadWizard({
           <XIcon className="size-4" />
         </button>
         <Field className="w-full rounded-xl border bg-card p-5 shadow-sm gap-3">
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <span className="text-base font-semibold">{t('wizard.range_title')}</span>
             <FieldDescription className="mt-0.5">
@@ -271,21 +271,21 @@ export function PdfUploadWizard({
             return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                  <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-0.5">
                     {availableLangs[effective] || effective}
                     <ChevronDownIcon className="size-3" />
-                  </Button>
+                  </span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-32">
                   {Object.entries(availableLangs).map(([code, name]) => (
-                    <DropdownMenuCheckboxItem
+                    <DropdownMenuItem
                       key={code}
-                      checked={effective === code}
-                      onCheckedChange={() => onSetProofLang(code)}
-                      onSelect={(e) => e.preventDefault()}
+                      onClick={() => onSetProofLang(code)}
+                      className="flex items-center justify-between"
                     >
                       {name}
-                    </DropdownMenuCheckboxItem>
+                      {effective === code && <CheckIcon className="size-3.5" />}
+                    </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
