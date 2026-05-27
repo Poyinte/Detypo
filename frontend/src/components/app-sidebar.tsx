@@ -13,10 +13,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { Settings2Icon, LanguagesIcon } from "lucide-react"
+import { Settings2Icon, LanguagesIcon, CheckIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useI18n } from '@/i18n'
 
@@ -50,7 +56,7 @@ export function AppSidebar({
 
   // Sync draft to saved key on popover close or validation failure
   useEffect(() => {
-    if (keyStatus && keyStatus !== t('nav.validating') && !keyOk) {
+    if (keyStatus && keyStatus !== '验证中...' && !keyOk) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftKey(apiKey)
     }
@@ -93,7 +99,7 @@ export function AppSidebar({
               >
                 <img
                   src="/logo.svg"
-                  alt="得误 Detypo"
+                  alt="Detypo"
                   className="dark:invert shrink-0 max-w-none"
                   style={{ width: 50, height: 40, maxWidth: 'none' }}
                 />
@@ -110,32 +116,29 @@ export function AppSidebar({
         <SidebarMenu>
           {/* Language toggle */}
           <SidebarMenuItem>
-            <Popover>
-              <PopoverTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <SidebarMenuButton tooltip={t('lang.ui_label')}>
                   <LanguagesIcon />
                   <span>{t('lang.ui_label')}</span>
                 </SidebarMenuButton>
-              </PopoverTrigger>
-              <PopoverContent className="w-48" side="top" align="start" sideOffset={12}>
-                <div className="flex flex-col gap-1">
-                  {([
-                    { code: 'zh' as const, label: '中文' },
-                    { code: 'en' as const, label: 'English' },
-                  ]).map(({ code, label }) => (
-                    <Button
-                      key={code}
-                      variant={uiLang === code ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setUiLang(code)}
-                      className="justify-start"
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" sideOffset={12} className="w-36">
+                {([
+                  { code: 'zh' as const, label: '中文' },
+                  { code: 'en' as const, label: 'English' },
+                ]).map(({ code, label }) => (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => setUiLang(code)}
+                    className="flex items-center justify-between"
+                  >
+                    {label}
+                    {uiLang === code && <CheckIcon className="size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
           {/* API settings */}
           <SidebarMenuItem>
@@ -159,12 +162,12 @@ export function AppSidebar({
                   <Button
                     onClick={() => onValidateKey(draftKey)}
                     size="sm"
-                    disabled={keyStatus === t('nav.validating')}
-                    variant={keyOk ? 'secondary' : keyStatus && !keyOk && keyStatus !== t('nav.validating') ? 'destructive' : 'outline'}
+                    disabled={keyStatus === '验证中...'}
+                    variant={keyOk ? 'secondary' : keyStatus && !keyOk && keyStatus !== '验证中...' ? 'destructive' : 'outline'}
                     className={cn(keyOk && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
                   >
-                    {keyStatus === t('nav.validating') && <Spinner data-icon="inline-start" />}
-                    {keyOk ? t('nav.validate_pass') : keyStatus && !keyOk && keyStatus !== t('nav.validating') ? t('nav.validate_fail') : t('nav.validate_btn')}
+                    {keyStatus === '验证中...' && <Spinner data-icon="inline-start" />}
+                    {keyOk ? t('nav.validate_pass') : keyStatus && !keyOk && keyStatus !== '验证中...' ? t('nav.validate_fail') : t('nav.validate_btn')}
                   </Button>
                 </div>
               </PopoverContent>
