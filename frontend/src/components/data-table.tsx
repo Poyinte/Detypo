@@ -322,8 +322,8 @@ export function DataTable({
 
   const selectedCount = table.getFilteredSelectedRowModel().rows.length
   const totalCount = table.getFilteredRowModel().rows.length
-  // Drag-select — requires 5px movement before activating to avoid accidental drags on click
-  const dragRef = React.useRef<{ active: boolean; pending: boolean; mode: 'select' | 'deselect'; startX: number; startY: number } | null>(null)
+  // Drag-select: clicks toggle single row; drag (≥5px) sweeps across rows
+  const dragRef = React.useRef<{ active: boolean; mode: 'select' | 'deselect'; startId: string; startX: number; startY: number; toggled: Set<string> } | null>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
   // Trigger animation on: page change, page size change, filter/vis change, view switch
@@ -408,16 +408,13 @@ export function DataTable({
     setCtxMenuOpen(false)
   }, [])
 
-  // Per-row mousedown (drag start)
+  // Per-row mousedown — records start state for potential drag; toggles on clean click (mouseup)
   const getRowMouseDown = React.useCallback((id: string) => (e: React.MouseEvent) => {
     if (e.button !== 0) return
     if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) return
     e.preventDefault()
-    setRowSelection(prev => {
-      const sel = !!prev[id]
-      dragRef.current = { active: false, pending: true, mode: sel ? 'deselect' : 'select', startX: e.clientX, startY: e.clientY }
-      return { ...prev, [id]: !sel }
-    })
+    const sel = !!rowSelectionRef.current[id]
+    dragRef.current = { active: false, mode: sel ? 'deselect' : 'select', startId: id, startX: e.clientX, startY: e.clientY, toggled: new Set() }
   }, [])
 
   // Per-row context menu handler
@@ -433,14 +430,14 @@ export function DataTable({
     const onMove = (e: MouseEvent) => {
       const d = dragRef.current
       if (!d) return
-      // Require 5px movement before activating drag-select
+      // Activate drag after 5px movement, then sweep across rows
       if (!d.active) {
-        if (!d.pending) return
         const dx = e.clientX - d.startX
         const dy = e.clientY - d.startY
-        if (dx * dx + dy * dy < 25) return // 5px² threshold
+        if (dx * dx + dy * dy < 25) return // 5px threshold
         d.active = true
-        d.pending = false
+        d.toggled.add(d.startId)
+        setRowSelection(prev => ({ ...prev, [d.startId]: d.mode === 'select' }))
       }
       const el = document.elementFromPoint(e.clientX, e.clientY)
       if (!el) return
@@ -448,22 +445,24 @@ export function DataTable({
       const row = el.closest('[data-row-id]') as HTMLElement | null
       if (!row) return
       const rid = row.getAttribute('data-row-id')!
-      const mode = d.mode
-      setRowSelection(prev => {
-        const want = mode === 'select'
-        if (prev[rid] === want) return prev
-        return { ...prev, [rid]: want }
-      })
+      if (d.toggled.has(rid)) return
+      d.toggled.add(rid)
+      setRowSelection(prev => ({ ...prev, [rid]: d.mode === 'select' }))
     }
     const onUp = () => {
+      const d = dragRef.current
       dragRef.current = null
       document.body.classList.remove('dragging-table')
+      // Clean click (no drag): toggle the single clicked row
+      if (d && !d.active) {
+        setRowSelection(prev => ({ ...prev, [d.startId]: !prev[d.startId] }))
+      }
     }
     const onDown = () => {
       document.body.classList.add('dragging-table')
     }
     const onSelectStart = (e: Event) => {
-      if (dragRef.current?.active) e.preventDefault()
+      if (dragRef.current) e.preventDefault()
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
