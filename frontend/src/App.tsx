@@ -181,6 +181,20 @@ export default function App() {
   // Language-specific categories and colors (from API)
   const [langCategories, setLangCategories] = useState<Record<string, string>>({})
 
+  // Sync categories when proofLang changes
+  useEffect(() => {
+    if (!proofLang) return
+    fetch(`${API}/api/languages`)
+      .then(r => r.json())
+      .then(langData => {
+        if (langData[proofLang]) {
+          const cats = langData[proofLang].categories
+          setLangCategories(cats)
+          setCategoryFilters(new Set(Object.keys(cats)))
+        }
+      }).catch(() => {})
+  }, [proofLang])
+
   useEffect(() => {
     if (keyOk) {
       const t = setTimeout(() => setKeyOk(false), 1000)
@@ -342,12 +356,13 @@ export default function App() {
       if (d.detected_lang) setProofLang(d.detected_lang)
       if (d.languages) setAvailableLangs(d.languages)
       pushLog('ready')
+      // Load categories for the detected language
+      const uploadLang = d.detected_lang || 'zh'
       fetch(`${API}/api/languages`)
         .then(r => r.json())
         .then(langData => {
-          const lang = d.detected_lang || 'zh'
-          if (langData[lang]) {
-            const cats = langData[lang].categories
+          if (langData[uploadLang]) {
+            const cats = langData[uploadLang].categories
             setLangCategories(cats)
             setCategoryFilters(new Set(Object.keys(cats)))
           }
