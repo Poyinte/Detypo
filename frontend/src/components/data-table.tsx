@@ -322,8 +322,8 @@ export function DataTable({
 
   const selectedCount = table.getFilteredSelectedRowModel().rows.length
   const totalCount = table.getFilteredRowModel().rows.length
-  // Drag-select
-  const dragRef = React.useRef<{ active: boolean; mode: 'select' | 'deselect'; startId: string } | null>(null)
+  // Drag-select — requires 5px movement before activating to avoid accidental drags on click
+  const dragRef = React.useRef<{ active: boolean; pending: boolean; mode: 'select' | 'deselect'; startX: number; startY: number } | null>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
   // Trigger animation on: page change, page size change, filter/vis change, view switch
@@ -415,7 +415,7 @@ export function DataTable({
     e.preventDefault()
     setRowSelection(prev => {
       const sel = !!prev[id]
-      dragRef.current = { active: true, mode: sel ? 'deselect' : 'select', startId: id }
+      dragRef.current = { active: false, pending: true, mode: sel ? 'deselect' : 'select', startX: e.clientX, startY: e.clientY }
       return { ...prev, [id]: !sel }
     })
   }, [])
@@ -431,14 +431,24 @@ export function DataTable({
   // Window-level mousemove/mouseup for drag
   React.useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!dragRef.current?.active) return
+      const d = dragRef.current
+      if (!d) return
+      // Require 5px movement before activating drag-select
+      if (!d.active) {
+        if (!d.pending) return
+        const dx = e.clientX - d.startX
+        const dy = e.clientY - d.startY
+        if (dx * dx + dy * dy < 25) return // 5px² threshold
+        d.active = true
+        d.pending = false
+      }
       const el = document.elementFromPoint(e.clientX, e.clientY)
       if (!el) return
       if (scrollRef.current && !scrollRef.current.contains(el)) return
       const row = el.closest('[data-row-id]') as HTMLElement | null
       if (!row) return
       const rid = row.getAttribute('data-row-id')!
-      const mode = dragRef.current.mode
+      const mode = d.mode
       setRowSelection(prev => {
         const want = mode === 'select'
         if (prev[rid] === want) return prev
