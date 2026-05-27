@@ -16,8 +16,9 @@ import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { Settings2Icon } from "lucide-react"
+import { Settings2Icon, LanguagesIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from '@/i18n'
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onUpload: () => void
@@ -44,11 +45,12 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { state } = useSidebar()
   const collapsed = state === 'collapsed'
+  const { t, uiLang, setUiLang } = useI18n()
   const [draftKey, setDraftKey] = useState(apiKey)
 
   // Sync draft to saved key on popover close or validation failure
   useEffect(() => {
-    if (keyStatus && keyStatus !== '验证中...' && !keyOk) {
+    if (keyStatus && keyStatus !== t('nav.validating') && !keyOk) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftKey(apiKey)
     }
@@ -56,13 +58,13 @@ export function AppSidebar({
 
   const navMain = [
     {
-      title: "上传 PDF",
+      title: t('nav.upload'),
       url: "#",
       icon: UploadIcon,
       onClick: onUpload,
     },
     {
-      title: "导出 PDF",
+      title: t('nav.export'),
       url: "#",
       icon: DownloadIcon,
       disabled: !canExport,
@@ -102,21 +104,51 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavMain items={navDocs} groupLabel="使用文档" />
+        <NavMain items={navDocs} groupLabel={t('nav.docs')} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {/* Language toggle */}
+          <SidebarMenuItem>
+            <Popover>
+              <PopoverTrigger asChild>
+                <SidebarMenuButton tooltip={t('lang.ui_label')}>
+                  <LanguagesIcon />
+                  <span>{t('lang.ui_label')}</span>
+                </SidebarMenuButton>
+              </PopoverTrigger>
+              <PopoverContent className="w-48" side="top" align="start" sideOffset={12}>
+                <div className="flex flex-col gap-1">
+                  {([
+                    { code: 'zh' as const, label: '中文' },
+                    { code: 'en' as const, label: 'English' },
+                  ]).map(({ code, label }) => (
+                    <Button
+                      key={code}
+                      variant={uiLang === code ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setUiLang(code)}
+                      className="justify-start"
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </SidebarMenuItem>
+          {/* API settings */}
           <SidebarMenuItem>
             <Popover onOpenChange={(open) => { if (open) setDraftKey(apiKey) }}>
               <PopoverTrigger asChild>
-                <SidebarMenuButton tooltip="API 设置">
+                <SidebarMenuButton tooltip={t('nav.api_settings')}>
                   <Settings2Icon />
-                  <span>API 设置</span>
+                  <span>{t('nav.api_settings')}</span>
                 </SidebarMenuButton>
               </PopoverTrigger>
               <PopoverContent className="w-80" side="top" align="start" sideOffset={12}>
                 <PopoverHeader>
-                  <PopoverTitle>API 设置</PopoverTitle>
+                  <PopoverTitle>{t('nav.api_title')}</PopoverTitle>
                 </PopoverHeader>
                 <div className="flex flex-col gap-3">
                   <Input
@@ -127,12 +159,12 @@ export function AppSidebar({
                   <Button
                     onClick={() => onValidateKey(draftKey)}
                     size="sm"
-                    disabled={keyStatus === '验证中...'}
-                    variant={keyOk ? 'secondary' : keyStatus && !keyOk && keyStatus !== '验证中...' ? 'destructive' : 'outline'}
+                    disabled={keyStatus === t('nav.validating')}
+                    variant={keyOk ? 'secondary' : keyStatus && !keyOk && keyStatus !== t('nav.validating') ? 'destructive' : 'outline'}
                     className={cn(keyOk && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
                   >
-                    {keyStatus === '验证中...' && <Spinner data-icon="inline-start" />}
-                    {keyOk ? '验证通过' : keyStatus && !keyOk && keyStatus !== '验证中...' ? 'API Key 无效' : '验证并保存'}
+                    {keyStatus === t('nav.validating') && <Spinner data-icon="inline-start" />}
+                    {keyOk ? t('nav.validate_pass') : keyStatus && !keyOk && keyStatus !== t('nav.validating') ? t('nav.validate_fail') : t('nav.validate_btn')}
                   </Button>
                 </div>
               </PopoverContent>
