@@ -3,16 +3,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.pdf_engine import PdfEngine
 from core.text_annotator import TextAnnotator
 from core.llm_client import LlmClient
-from utils.config import CATEGORY_COLORS, get_batch_size
+from core.language_profile import LanguageProfile, hex_to_rgb
+from utils.config import get_batch_size
 
 
 class Proofreader:
     def __init__(self, pdf_engine: PdfEngine, annotator: TextAnnotator,
-                 llm_client: LlmClient, rules_content: str):
+                 llm_client: LlmClient, profile: LanguageProfile):
         self._engine = pdf_engine
         self._annotator = annotator
         self._llm = llm_client
-        self._rules = rules_content
+        self._profile = profile
         self._stop_flag = False
         self._errors: list[dict] = []
 
@@ -55,7 +56,7 @@ class Proofreader:
 
         # ── Phase 2: Parallel LLM calls ──
         def process_batch(annotated_text: str, batch_range: range, page_nums: list[int]):
-            llm_errors, usage = self._llm.proofread(annotated_text, self._rules)
+            llm_errors, usage = self._llm.proofread(annotated_text, self._profile)
             cache_hit = usage.get("prompt_cache_hit_tokens") or usage.get("prompt_tokens_details", {}).get("cached_tokens") or 0
             cache_miss = usage.get("prompt_cache_miss_tokens") or 0
             total = usage.get("total_tokens", 0)
@@ -185,8 +186,11 @@ class Proofreader:
                 info = self._annotator.lookup(err_id)
                 if info is None:
                     continue
-                category = err.get("category", "用字错误")
-                color = CATEGORY_COLORS.get(category, CATEGORY_COLORS["用字错误"])
+                default_cat = list(self._profile.categories.keys())[0]
+                default_hex = list(self._profile.categories.values())[0]
+                category = err.get("category", default_cat)
+                hex_color = self._profile.categories.get(category, default_hex)
+                color = hex_to_rgb(hex_color)
                 bbox = info["bbox"]
                 reason = err.get("reason", "")
                 correction_text = f"{err.get('original', '')} → {err.get('correction', '')}\n——————\n{reason}"
