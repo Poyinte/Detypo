@@ -59,7 +59,7 @@ const translations: Record<UILang, Record<string, string>> = {
     'table.excluded': '已排除 {count} 项',
     'table.per_page': '每页',
     'table.items': '条',
-    'table.exclude_selected': '排除已选',
+    'table.exclude_selected': '剔除已选',
     'table.restore_selected': '恢复已选',
     'table.deselect': '取消选择',
 
