@@ -3,7 +3,7 @@
 # detypo — Detypo PDF Proofreader one-click launcher
 # =============================================================================
 # Usage:
-#   ./detypo              Prod mode (build, serve at :8000) [default]
+#   ./detypo              Prod mode (build, serve at :8520) [default]
 #   ./detypo dev           Dev mode (hot-reload, opens :5173)
 #   ./detypo stop          Stop all services
 #
@@ -16,7 +16,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-BACKEND_PORT=8000
+BACKEND_PORT=8520
 FRONTEND_PORT=5173
 FRONTEND_DIR="frontend"
 
@@ -183,7 +183,7 @@ case "${1:-prod}" in
     stop) do_stop ;;
     *)
         echo "Usage: ./detypo {prod|dev|stop}"
-        echo "  prod  Prod mode (default) — build and serve at :8000"
+        echo "  prod  Prod mode (default) — build and serve at :8520"
         echo "  dev   Dev mode — hot-reload, opens :5173"
         echo "  stop  Stop all services"
         exit 1

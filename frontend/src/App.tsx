@@ -234,7 +234,7 @@ export default function App() {
     }, 1000)
   }, [])
 
-  const API = 'http://127.0.0.1:8000'
+  const API = 'http://127.0.0.1:8520'
 
   // Load balance on mount
   useEffect(() => {
