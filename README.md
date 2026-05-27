@@ -12,7 +12,7 @@
 </picture>
 </p>
 
-中文 PDF 校对工具 —— 调用 AI 自动识别常见错误<br>
+多语种 PDF 校对工具 —— 调用 AI 自动识别常见错误<br>
 <sub>Made with <a href="https://platform.deepseek.com/"><img src="https://img.shields.io/badge/-DeepSeek_V4-4D6BFE?style=flat-square&logo=deepseek&logoColor=white" height="18" align="center"></a></sub>
 
 ![Python](https://img.shields.io/badge/-Python_3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
@@ -27,11 +27,12 @@
 
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 基本功能
 
+- **多语种支持** — 自动检测文档语种，切换对应规则库（中文 / English）
 - **快速校对** — 调用 `deepseek-v4-flash` 进行校对，快速发现错误
 - **错误整理** — 校对完成后，可对错误条目进行整理
 - **便于核查** — 导出的 PDF 文件带有可定位的详细注释，便于核查
 
-主要识别以下错误类型：
+中文校对识别以下错误类型：
 
 <div align="center">
 
@@ -44,7 +45,22 @@
 | 数字用法 | 阿拉伯数字与汉字数字使用、概数表达、计量单位等使用不规范 |
 | 政治敏感 | 政治敏感表达、违反相关法律法规 |
 
-<sub>详见 [`proofreading-rules.md`](rules/proofreading-rules.md)</sub>
+<sub>详见 [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md)</sub>
+
+</div>
+
+英文校对识别以下错误类型：
+
+<div align="center">
+
+| 类别 | 示例 |
+| :--- | :--- |
+| Spelling | 同音 / 近音混淆词（affect/effect, principal/principle 等） |
+| Grammar | 主谓一致、代词一致、修饰语位置、平行结构、介词/连词误用 |
+| Punctuation | 逗号（Oxford comma）、破折号（em/en dash）、引号、省略号等误用 |
+| Numbers | 数字拼写 / 阿拉伯数字、日期时间、范围、货币格式等使用不规范 |
+
+<sub>详见 [`proofreading-rules-en.md`](rules/proofreading-rules-en.md)</sub>
 
 </div>
 
@@ -102,12 +118,14 @@ chmod +x detypo
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 使用说明
 
 1. **设置 API Key** — 启动后输入 `DeepSeek API Key`（首次使用时弹窗引导，之后可在侧边栏 <kbd>API 设置</kbd> 中修改）
-2. **上传 PDF** — 拖入 PDF 文件到页面 `虚线框` 内或点击 <kbd>选择 PDF 文件</kbd>
-3. **设置校对范围** — 选择校对页码范围，`向导` 中会显示页面预览和预估用量
-4. **开始校对** — 点击 <kbd>开始校对</kbd>，等待校对完成
-5. **浏览校对结果** — 在 <kbd>列表</kbd> 或 <kbd>卡片</kbd> 视图中浏览校对结果，可按错误类别进行筛选
-6. **整理校对结果** — 点击条目以选中，<kbd>鼠标右键</kbd> 进行 `剔除` / `恢复` （按住 <kbd>鼠标左键</kbd> 拖动可 `批量选中`）
-7. **导出 PDF** — 点击 <kbd>导出 PDF</kbd> 下载带有标注的校对稿
+2. **选择界面语言** — 侧边栏 <kbd>界面语言</kbd> 可切换中 / 英文界面
+3. **上传 PDF** — 拖入 PDF 文件到页面 `虚线框` 内或点击 <kbd>选择 PDF 文件</kbd>
+4. **选择校对语种** — 系统自动检测文档语种，也可在向导中通过文件信息旁的按钮手动切换
+5. **设置校对范围** — 选择校对页码范围，`向导` 中会显示页面预览和预估用量
+6. **开始校对** — 点击 <kbd>开始校对</kbd>，等待校对完成
+7. **浏览校对结果** — 在 <kbd>列表</kbd> 或 <kbd>卡片</kbd> 视图中浏览校对结果，可按错误类别进行筛选
+8. **整理校对结果** — 点击条目以选中，<kbd>鼠标右键</kbd> 进行 `剔除` / `恢复` （按住 <kbd>鼠标左键</kbd> 拖动可 `批量选中`）
+9. **导出 PDF** — 点击 <kbd>导出 PDF</kbd> 下载带有标注的校对稿
 
 ---
 
@@ -115,7 +133,11 @@ chmod +x detypo
 
 ## 校对规则
 
-校对规则库 [`proofreading-rules.md`](rules/proofreading-rules.md) 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
+**中文规则库** [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md) 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
+
+**英文规则库** [`proofreading-rules-en.md`](rules/proofreading-rules-en.md) 基于 [The Chicago Manual of Style <sub>（18th Edition）</sub>](https://www.chicagomanualofstyle.org/) 提取整理。
+
+语种配置位于 [`rules/languages.json`](rules/languages.json)，用户可自行添加新语种：放入 `proofreading-rules-{code}.md` 文件并在 `languages.json` 中注册即可。
 
 > [!IMPORTANT]
 > 本项目仅用于学术研究和个人使用，使用者应自行评估合规性。
