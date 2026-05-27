@@ -48,25 +48,26 @@ Detypo does not bundle an API key — you bring your own DeepSeek API key. This 
 
 Get a key at [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys).
 
-## Version Tags
+## Tags
 
-Images are tagged with semver (`v1.1.0`, `v1.1.1`, etc.) in addition to `latest`. Use a specific tag for pinned deployments:
+| Tag | Description |
+| :--- | :--- |
+| `latest` | Latest stable release — **recommended for most users** |
+| `v1` `v1.1` `v1.1.0` | Specific semver versions for pinned deployments |
+| `v*` | Each pushed version tag triggers an automatic build via GitHub Actions |
 
 ```bash
+# Use latest (always up to date)
+docker run -p 8000:8000 poyinte/detypo:latest
+
+# Pin to a specific version
 docker run -p 8000:8000 poyinte/detypo:v1.1.0
 ```
 
 ## Updating
 
-Pull the latest image:
-
 ```bash
 docker pull poyinte/detypo:latest
-```
-
-Then stop and recreate your container:
-
-```bash
 docker stop detypo && docker rm detypo
 docker run -p 8000:8000 poyinte/detypo:latest
 ```
