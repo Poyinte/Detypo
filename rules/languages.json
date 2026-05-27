@@ -15,7 +15,7 @@
     "name": "English",
     "prompt_lang": "en",
     "categories": {
-      "Spelling & Word Confusions": "#D44545",
+      "Spelling": "#D44545",
       "Grammar": "#6E9ED4",
       "Punctuation": "#45D46E",
       "Numbers": "#D4A86E"

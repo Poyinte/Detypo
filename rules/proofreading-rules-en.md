@@ -2,7 +2,7 @@
 
 > Based on The Chicago Manual of Style, 18th Edition. Organized for automated proofreading.
 
-## 1. Spelling & Word Confusions
+## 1. Spelling
 
 ### 1.1 Commonly Confused Words (from CMOS Ch.5 §5.254)
 

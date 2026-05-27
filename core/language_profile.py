@@ -41,7 +41,7 @@ _SYSTEM_PROMPTS: dict[str, str] = {
         "5. Keep each original under 50 words, pinpointing the exact error location.\n"
         "6. Each [#NNNN] identifier may appear in at most one error entry. If the same segment has multiple error types, mark only the most significant one.\n\n"
         "You must output strictly the following JSON format with no other content:\n"
-        '{{"errors": [{{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling & Word Confusions", "reason": "explanation"}}]}}\n'
+        '{{"errors": [{{"error_id": "#0001", "original": "misspelled", "correction": "correct", "category": "Spelling", "reason": "explanation"}}]}}\n'
         'If no errors are found, output: {{"errors": []}}'
     ),
 }
