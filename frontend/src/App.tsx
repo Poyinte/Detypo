@@ -560,19 +560,22 @@ export default function App() {
       c.style.animationDelay = ''
       c.style.animationFillMode = ''
     })
+    // Only animate non-excluded cards
+    const animCards = [...cards].filter(c => !c.classList.contains('opacity-40'))
+    if (!animCards.length) return
     // Force reflow so removed classes take effect before re-adding
     void el.offsetHeight
     // Staggered entrance
-    const total = Math.min(0.4, cards.length * 0.03)
-    const step = total / cards.length
-    cards.forEach((c, i) => {
+    const total = Math.min(0.4, animCards.length * 0.03)
+    const step = total / animCards.length
+    animCards.forEach((c, i) => {
       c.style.animationDelay = `${i * step}s`
       c.style.animationFillMode = 'backwards'
       c.classList.add('card-enter')
     })
     const cleanupMs = (total + 0.2) * 1000 + 50
     const timer = setTimeout(() => {
-      cards.forEach(c => {
+      animCards.forEach(c => {
         c.classList.remove('card-enter')
         c.style.animationDelay = ''
         c.style.animationFillMode = ''
