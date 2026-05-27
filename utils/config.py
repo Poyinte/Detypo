@@ -25,28 +25,11 @@ PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 
 # Proofreading rules
-RULES_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "rules", "proofreading-rules.md"
+RULES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "rules"
 )
+LANGUAGES_JSON = os.path.join(RULES_DIR, "languages.json")
 
-# Highlight colors (RGB 0–1 for PyMuPDF, hex for frontend)
-CATEGORY_COLORS = {
-    "用字错误": (0.83, 0.27, 0.27),
-    "用词不当": (0.55, 0.41, 0.08),
-    "语法错误": (0.18, 0.31, 0.08),
-    "标点符号": (0.27, 0.55, 0.42),
-    "数字用法": (0.55, 0.27, 0.55),
-    "政治敏感": (0.83, 0.27, 0.38),
-}
-
-CATEGORY_HEX = {
-    "用字错误": "#D44545",
-    "用词不当": "#D4A86E",
-    "语法错误": "#6E9ED4",
-    "标点符号": "#45D46E",
-    "数字用法": "#A86ED4",
-    "政治敏感": "#D46E9E",
-}
 
 def get_batch_size(page_count: int) -> int:
     if page_count <= 50:
