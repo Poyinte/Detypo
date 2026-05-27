@@ -78,7 +78,6 @@ export default function App() {
   const [progressPct, setProgressPct] = useState(0)
   const [showProgress, setShowProgress] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
-  const [hasError, setHasError] = useState(false)
   const [elapsed, setElapsed] = useState('')
   const [showElapsed, setShowElapsed] = useState(false)
   const [spinnerIdx, setSpinnerIdx] = useState(0)
@@ -330,7 +329,7 @@ export default function App() {
         break
       }
       case 'proofread_error':
-        stopTimer(); setShowProgress(false); setHasError(true)
+        stopTimer(); setShowProgress(false)
         fakeProgressRef.current?.end()
         pushLog(`proofread_error message="${d.message || 'unknown error'}"`)
         break
@@ -379,7 +378,7 @@ export default function App() {
     // Abort any in-flight EventSource from a previous session
     abortRef.current?.abort()
     abortRef.current = null
-    setErrors([]); setExcludedIds(new Set()); setCurrentPage(1); setHasError(false)
+    setErrors([]); setExcludedIds(new Set()); setCurrentPage(1)
     setTotalTokens(0); setCacheHitTokens(0); setProofCost(0); setShowElapsed(true)
     setModelName('')
     setShowProgress(true); setProgressPct(0); setDisconnected(false)
@@ -542,7 +541,7 @@ export default function App() {
   const doUpload = useCallback(() => {
     abortRef.current?.abort(); abortRef.current = null
     setReuploadOpen(false)
-    setErrors([]); setHasError(false)
+    setErrors([])
     setExcludedIds(new Set())
     setFileId(null)
     setPageRange(null)
@@ -875,7 +874,7 @@ export default function App() {
             <span className={cn(
               'w-2 h-2 rounded-full shrink-0',
               disconnected ? 'bg-muted-foreground' :
-              hasError ? 'bg-red-500' :
+              logLines.length > 0 && /error/i.test(logLines[logLines.length - 1]?.msg || '') ? 'bg-red-500' :
               showElapsed ? 'bg-primary animate-pulse-soft' :
               'bg-emerald-600 animate-pulse-soft'
             )} />
