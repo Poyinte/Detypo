@@ -159,6 +159,7 @@ async def proofread_stream(
     if lang not in LANGUAGE_PROFILES:
         lang = "zh"
     profile = LANGUAGE_PROFILES[lang]
+    session["proof_lang"] = lang  # store for export
     proofreader = Proofreader(engine, annotator, llm, profile)
 
     session["engine"] = engine
@@ -252,7 +253,7 @@ async def export_pdf(file_id: str, body: ExportRequest):
     for err in errors:
         if err.get("error_id") in exclude_set:
             continue
-        lang = session.get("detected_lang", "zh")
+        lang = session.get("proof_lang", session.get("detected_lang", "zh"))
         profile = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["zh"])
         default_cat = list(profile.categories.keys())[0]
         default_hex = list(profile.categories.values())[0]
