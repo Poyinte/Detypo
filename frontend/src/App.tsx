@@ -160,6 +160,7 @@ export default function App() {
   const [animKey, setAnimKey] = useState(0)
   const cardScrollRef = useRef<HTMLDivElement>(null)
   const cardScrollPos = useRef<Map<number, number>>(new Map())
+  const cardEnteredIds = useRef<Set<string>>(new Set())  // skip re-animation on toggle
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>(() => {
     const stored = localStorage.getItem('theme')
     if (stored === 'dark' || stored === 'light') return stored
@@ -335,7 +336,7 @@ export default function App() {
       const r = await fetch(`${API}/api/upload`, { method: 'POST', body: fd })
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'upload failed')
       const d = await r.json()
-      setFileId(d.file_id); setPageCount(d.page_count); setErrors([]); setExcludedIds(new Set())
+      setFileId(d.file_id); setPageCount(d.page_count); setErrors([]); setExcludedIds(new Set()); cardEnteredIds.current.clear()
       setActiveView('list'); setCurrentPage(1)
       setFilename(f.name)
       setPageRange(null)
@@ -361,7 +362,7 @@ export default function App() {
     if (!apiKey) return
     // Set range if not already set (sidebar start button clicked from wizard)
     if (range && !pageRange) setPageRange(range)
-    setErrors([]); setExcludedIds(new Set()); setCurrentPage(1)
+    setErrors([]); setExcludedIds(new Set()); cardEnteredIds.current.clear(); setCurrentPage(1)
     setTotalTokens(0); setCacheHitTokens(0); setProofCost(0); setShowElapsed(true)
     setShowProgress(true); setProgressPct(0); setDisconnected(false)
     setLogLines([])
@@ -523,6 +524,7 @@ export default function App() {
     setReuploadOpen(false)
     setErrors([])
     setExcludedIds(new Set())
+    cardEnteredIds.current.clear()
     setFileId(null)
     setPageRange(null)
     setPageCount(0)
@@ -756,18 +758,20 @@ export default function App() {
                     <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 xl:grid-cols-4">
                       {pageErrors.map(e => {
                         const ex = excludedIds.has(e.error_id)
+                        const isNew = !cardEnteredIds.current.has(e.error_id)
+                        if (isNew) cardEnteredIds.current.add(e.error_id)
                         const hex = langCategories[e.category] || '#888'
                         return (
                           <Card
                             key={e.error_id}
                             className={cn(
                               'relative cursor-pointer transition-all duration-200 border hover:shadow-lg hover:-translate-y-1 hover:z-10',
-                              ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : 'card-enter'
+                              ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : isNew && 'card-enter'
                             )}
                             style={{
                               contentVisibility: 'auto',
                               containIntrinsicSize: 'auto 120px',
-                              ...(ex ? {} : { animationDelay: `${pageErrors.indexOf(e) * 30}ms`, animationFillMode: 'backwards' }),
+                              ...(!ex && isNew ? { animationDelay: `${pageErrors.indexOf(e) * 30}ms`, animationFillMode: 'backwards' } : {}),
                             }}
                             onClick={() => toggleExclude(e.error_id)}
                             size="sm"
