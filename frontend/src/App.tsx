@@ -21,7 +21,7 @@ import {
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { DataTable } from '@/components/data-table'
-import { useI18n } from '@/i18n'
+import { useI18n, getUILang } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ListIcon, LayoutGridIcon, MoonIcon, SunIcon, SunMoonIcon } from 'lucide-react'
@@ -74,7 +74,7 @@ export default function App() {
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState<ViewType>('list')
   const [currentPage, setCurrentPage] = useState(1)
-  const [logLines, setLogLines] = useState<{ts: string, msg: string}[]>([{ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }), msg: 'connected'}])
+  const [logLines, setLogLines] = useState<{ts: string, msg: string}[]>([{ts: new Date().toLocaleTimeString(getUILang() === 'zh' ? 'zh-CN' : 'en-US', { hour12: false }), msg: 'connected'}])
   const [progressPct, setProgressPct] = useState(0)
   const [showProgress, setShowProgress] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
@@ -187,7 +187,7 @@ export default function App() {
       const t = setTimeout(() => setKeyOk(false), 1000)
       return () => clearTimeout(t)
     }
-    if (!keyOk && keyStatus && keyStatus !== '验证中...') {
+    if (!keyOk && keyStatus && keyStatus !== 'checking') {
       const t = setTimeout(() => setKeyStatus(''), 1000)
       return () => clearTimeout(t)
     }
@@ -203,7 +203,7 @@ export default function App() {
 
 
   const pushLog = useCallback((msg: string) => {
-    const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+    const ts = new Date().toLocaleTimeString(getUILang() === 'zh' ? 'zh-CN' : 'en-US', { hour12: false })
     setLogLines(prev => {
       const next = [...prev, { ts, msg }]
       return next.length > 50 ? next.slice(-50) : next
@@ -426,7 +426,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ exclude_ids: [...excludedIds] }),
       })
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || '导出失败')
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || t('dialog.export_failed'))
       const blob = await r.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -435,9 +435,11 @@ export default function App() {
     } catch (e: unknown) { pushLog(`export error: ${(e as Error).message}`) }
   }
 
+  // keyStatus uses language-independent codes: '' | 'checking' | 'fail' | 'error'
+
   const validateKey = async (key: string) => {
-    if (!key.startsWith('sk-')) { setKeyStatus('API Key 无效'); return }
-    setKeyStatus('验证中...')
+    if (!key.startsWith('sk-')) { setKeyStatus('fail'); return }
+    setKeyStatus('checking')
     try {
       const r = await fetch(`${API}/api/settings/key`, {
         method: 'POST',
@@ -456,8 +458,8 @@ export default function App() {
         }).then(r => r.json()).then(d => {
           if (d.balance) setBalance(d.balance)
         }).catch(() => {})
-      } else { setKeyStatus('API Key 无效') }
-    } catch { setKeyStatus('网络错误，请重试') }
+      } else { setKeyStatus('fail') }
+    } catch { setKeyStatus('error') }
   }
 
   const toggleDarkMode = useCallback(() => {
@@ -803,7 +805,7 @@ export default function App() {
             {elapsed && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>耗时 {elapsed}</span>
+                <span>{t('status.elapsed', { elapsed })}</span>
               </>
             )}
             {modelName && (
@@ -815,17 +817,13 @@ export default function App() {
             {totalTokens > 0 && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span title="prompt + completion">Tokens {fmtTokens(totalTokens)}</span>
-                {cacheHitTokens > 0 && (
-                  <>
-                    <Separator orientation="vertical" className="h-3" />
-                    <span>命中 {fmtTokens(cacheHitTokens)} ({Math.round(cacheHitTokens / totalTokens * 100)}%)</span>
-                  </>
-                )}
+                <span>{t('status.tokens', { tokens: fmtTokens(totalTokens) })}</span>
+                <Separator orientation="vertical" className="h-3" />
+                <span>{t('status.cache_hit', { tokens: fmtTokens(cacheHitTokens), pct: totalTokens > 0 ? Math.round(cacheHitTokens / totalTokens * 100) : 0 })}</span>
                 {!showElapsed && proofCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
-                    <span>消费 ¥{proofCost.toFixed(2)}</span>
+                    <span>{t('status.cost', { cost: proofCost.toFixed(2) })}</span>
                   </>
                 )}
               </>
@@ -833,7 +831,7 @@ export default function App() {
             {balance && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>余额 ¥{parseFloat(balance).toFixed(2)}</span>
+                <span>{t('status.balance', { balance: parseFloat(balance).toFixed(2) })}</span>
               </>
             )}
           </div>
@@ -843,14 +841,14 @@ export default function App() {
       <AlertDialog open={reuploadOpen} onOpenChange={setReuploadOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>重新上传 PDF</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.reupload_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              此操作会清空当前校对结果。请确认已导出所需文件。
+              {t('dialog.reupload_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={doUpload} variant="destructive">确定</AlertDialogAction>
+            <AlertDialogCancel>{t('dialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={doUpload} variant="destructive">{t('dialog.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -861,7 +859,7 @@ export default function App() {
           onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>请输入 DeepSeek API Key</DialogTitle>
+            <DialogTitle>{t('dialog.api_key_title')}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <Input
@@ -876,12 +874,12 @@ export default function App() {
             />
             <Button
               onClick={() => validateKey(apiKey)}
-              disabled={keyStatus === '验证中...'}
-              variant={keyOk ? 'secondary' : keyStatus && keyStatus !== '验证中...' ? 'destructive' : 'default'}
+              disabled={keyStatus === 'checking'}
+              variant={keyOk ? 'secondary' : keyStatus && keyStatus !== 'checking' ? 'destructive' : 'default'}
               className={keyOk ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}
             >
-              {keyStatus === '验证中...' && <Spinner data-icon="inline-start" />}
-              {keyOk ? '验证通过' : keyStatus && keyStatus !== '验证中...' ? 'API Key 无效' : '验证并保存'}
+              {keyStatus === 'checking' && <Spinner data-icon="inline-start" />}
+              {keyOk ? t('nav.validate_pass') : (keyStatus === 'fail' || keyStatus === 'error') ? t('nav.validate_fail') : t('nav.validate_btn')}
             </Button>
           </div>
         </DialogContent>

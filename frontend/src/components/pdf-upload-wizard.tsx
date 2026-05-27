@@ -204,7 +204,7 @@ export function PdfUploadWizard({
       el.ondragleave = null
       el.ondrop = null
     }
-  }, [onUpload])
+  }, [onUpload, t])
 
   const [closing, setClosing] = useState(false)
 
