@@ -1,16 +1,18 @@
-# Detypo — AI-Powered Chinese PDF Proofreading
+# Detypo — AI-Powered Bilingual PDF Proofreading
 
-Detypo is a Chinese-language PDF proofreading tool that uses the DeepSeek API to automatically detect typos, grammar errors, punctuation mistakes, and non-compliant expressions. Results are overlaid as color-coded annotations on the original PDF for easy review.
+Detypo is a Chinese/English PDF proofreading tool that uses the DeepSeek API to automatically detect typos, grammar errors, punctuation mistakes, and non-compliant expressions. Results are overlaid as color-coded annotations on the original PDF for easy review.
 
 Made with FastAPI, React 19, and shadcn/ui.
 
 ## Key Capabilities
 
-- **AI Proofreading** — Detects 6 categories of errors: character misuse, word misuse, grammar, punctuation, number formatting, and sensitive terms
+- **Bilingual Proofreading** — Auto-detects document language and applies the correct rule set: Chinese (6 error categories) or English (4 categories based on Chicago Manual of Style, 18th ed.)
+- **Extensible** — Add new languages by dropping in a rules file and registering it in `languages.json` — no code changes needed. CLI command `/add-language` automates the setup.
 - **Dual View** — Review findings in a filterable table or card layout with page-by-page navigation
 - **Selective Export** — Toggle individual corrections on/off before exporting the annotated PDF
 - **Cost Preview** — Token estimation and cost breakdown before starting each proofread
 - **SSE Streaming** — Real-time progress updates during LLM processing
+- **UI Language** — Switch between Chinese and English interface from the sidebar
 - **Dark Mode** — Light / dark / system-follow themes
 - **Self-Hosted** — Runs entirely on your machine with your own DeepSeek API key
 
@@ -46,6 +48,14 @@ Detypo does not bundle an API key — you bring your own DeepSeek API key. This 
 
 Get a key at [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys).
 
+## Version Tags
+
+Images are tagged with semver (`v1.1.0`, `v1.1.1`, etc.) in addition to `latest`. Use a specific tag for pinned deployments:
+
+```bash
+docker run -p 8000:8000 poyinte/detypo:v1.1.0
+```
+
 ## Updating
 
 Pull the latest image:
@@ -58,7 +68,7 @@ Then stop and recreate your container:
 
 ```bash
 docker stop detypo && docker rm detypo
-docker run -p 8000:8000 poyinte/detypo
+docker run -p 8000:8000 poyinte/detypo:latest
 ```
 
 ## Source Code
