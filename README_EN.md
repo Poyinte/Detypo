@@ -37,12 +37,12 @@ Chinese proofreading detects the following error types:
 
 | Category | Examples |
 | :--- | :--- |
-| Character Errors | Visually similar / homophone / near-homophone misuse, nonstandard glyphs (traditional characters, variant forms, old字形) |
-| Word Choice | Variant-form / near-synonym misuse, idiom errors, invented words / dialect / loanwords, nonstandard abbreviations |
-| Grammar | Wrong part of speech, missing sentence components, improper collocation, mixed constructions, ambiguity, illogical quantity expressions |
-| Punctuation | Misuse of commas, enumeration commas, semicolons, quotation marks, book-title marks, ellipses, em/en dashes, hyphens, colons, question marks, exclamation marks, etc. |
-| Numerals | Nonstandard use of Arabic vs. Chinese numerals, approximate numbers, measurement units |
-| Political Sensitivity | Politically sensitive expressions, violations of applicable laws and regulations |
+| 用字错误 | Visually similar / homophone / near-homophone misuse, nonstandard glyphs (traditional characters, variant forms, old字形) |
+| 用词不当 | Variant-form / near-synonym misuse, idiom errors, invented words / dialect / loanwords, nonstandard abbreviations |
+| 语法错误 | Wrong part of speech, missing sentence components, improper collocation, mixed constructions, ambiguity, illogical quantity expressions |
+| 标点符号 | Misuse of commas, enumeration commas, semicolons, quotation marks, book-title marks, ellipses, em/en dashes, hyphens, colons, question marks, exclamation marks, etc. |
+| 数字用法 | Nonstandard use of Arabic vs. Chinese numerals, approximate numbers, measurement units |
+| 政治敏感 | Politically sensitive expressions, violations of applicable laws and regulations |
 
 <sub>See [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md)</sub>
 
