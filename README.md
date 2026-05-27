@@ -1,12 +1,5 @@
-<table><tr><td>
-
-[![AGPL v3](https://www.gnu.org/graphics/agplv3-155x51.png)](https://www.gnu.org/licenses/agpl-3.0.html)
-
-</td><td align="right">
-
-  **中文** | [English](README_EN.md)
-
-</td></tr></table>
+<a href="https://www.gnu.org/licenses/agpl-3.0.html"><img src="https://www.gnu.org/graphics/agplv3-155x51.png" alt="AGPL v3" align="left"></a>
+<div align="right"><b>中文</b> | <a href="README_EN.md">English</a></div>
 <br>
 <div align="center">
 <p>
