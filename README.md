@@ -12,7 +12,7 @@
 </picture>
 </p>
 
-多语种 PDF 校对工具 —— 调用 AI 自动识别常见错误<br>
+中英文 PDF 校对工具 —— 调用 AI 自动识别常见错误<br>
 <sub>Made with <a href="https://platform.deepseek.com/"><img src="https://img.shields.io/badge/-DeepSeek_V4-4D6BFE?style=flat-square&logo=deepseek&logoColor=white" height="18" align="center"></a></sub>
 
 ![Python](https://img.shields.io/badge/-Python_3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
@@ -27,10 +27,10 @@
 
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 基本功能
 
-- **多语种支持** — 自动检测文档语种，切换对应规则库（中文 / English）
 - **快速校对** — 调用 `deepseek-v4-flash` 进行校对，快速发现错误
 - **错误整理** — 校对完成后，可对错误条目进行整理
 - **便于核查** — 导出的 PDF 文件带有可定位的详细注释，便于核查
+- **中英双语** — 自动检测文档语种，切换对应规则库进行校对
 
 中文校对识别以下错误类型：
 
@@ -55,10 +55,10 @@
 
 | 类别 | 示例 |
 | :--- | :--- |
-| Spelling | 同音 / 近音混淆词（affect/effect, principal/principle 等） |
-| Grammar | 主谓一致、代词一致、修饰语位置、平行结构、介词/连词误用 |
-| Punctuation | 逗号（Oxford comma）、破折号（em/en dash）、引号、省略号等误用 |
-| Numbers | 数字拼写 / 阿拉伯数字、日期时间、范围、货币格式等使用不规范 |
+| Spelling | Commonly Confused Words |
+| Grammar | Subject-Verb Agreement, Pronoun Agreement, Verb Tense & Mood, Modifiers, Parallel Structure, Prepositions, Conjunctions & Syntax |
+| Punctuation | Commas, Semicolons, Colons, Dashes (Em dash, En dash, Hyphen), Quotation Marks, Apostrophes, Parentheses and Brackets, Ellipses & Other Punctuation |
+| Numbers | Numerals vs. Words, Dates and Times, Ranges and Inclusive Numbers, Fractions and Decimals, Money and Currency & Additional Number Conventions |
 
 <sub>详见 [`proofreading-rules-en.md`](rules/proofreading-rules-en.md)</sub>
 
@@ -118,14 +118,40 @@ chmod +x detypo
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 使用说明
 
 1. **设置 API Key** — 启动后输入 `DeepSeek API Key`（首次使用时弹窗引导，之后可在侧边栏 <kbd>API 设置</kbd> 中修改）
-2. **选择界面语言** — 侧边栏 <kbd>界面语言</kbd> 可切换中 / 英文界面
+2. **选择界面语言** — 侧边栏 <kbd>界面语言</kbd> 可切换界面语言
 3. **上传 PDF** — 拖入 PDF 文件到页面 `虚线框` 内或点击 <kbd>选择 PDF 文件</kbd>
-4. **选择校对语种** — 系统自动检测文档语种，也可在向导中通过文件信息旁的按钮手动切换
+4. **选择校对语种** — 系统自动检测文档语种，也可在 `向导` 中手动指定
 5. **设置校对范围** — 选择校对页码范围，`向导` 中会显示页面预览和预估用量
 6. **开始校对** — 点击 <kbd>开始校对</kbd>，等待校对完成
 7. **浏览校对结果** — 在 <kbd>列表</kbd> 或 <kbd>卡片</kbd> 视图中浏览校对结果，可按错误类别进行筛选
-8. **整理校对结果** — 点击条目以选中，<kbd>鼠标右键</kbd> 进行 `剔除` / `恢复` （按住 <kbd>鼠标左键</kbd> 拖动可 `批量选中`）
-9. **导出 PDF** — 点击 <kbd>导出 PDF</kbd> 下载带有标注的校对稿
+8. **整理校对结果** — 在 `列表` 视图中，点击条目以选中，<kbd>鼠标右键</kbd> 进行 `剔除` / `恢复` （按住 <kbd>鼠标左键</kbd> 拖动可 `批量选中`）；在 `卡片` 视图中，点击 `卡片` 进行 `剔除` / `恢复`
+9. **导出 PDF** — 点击 <kbd>导出 PDF</kbd> 下载带有详细注释的校对稿
+
+---
+
+# <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/layers-dark.svg"><img src="./docs/icons/layers.svg" height="28" align="absmiddle"></picture> 添加新语种
+
+1. 在 [`rules/`](rules/) 目录下创建 `proofreading-rules-{code}.md`（如 `proofreading-rules-fr.md`），写入该语种的校对规则
+2. 在 [`rules/languages.json`](rules/languages.json) 中添加对应条目：
+
+```json
+"fr": {
+  "name": "Français",
+  "prompt_lang": "fr",
+  "categories": {
+    "Orthographe": "#D44545",
+    "Grammaire": "#6E9ED4",
+    "Ponctuation": "#45D46E",
+    "Nombres": "#D4A86E"
+  }
+}
+```
+
+3. 如需适配系统提示词，在 [`core/language_profile.py`](core/language_profile.py) 的 `_SYSTEM_PROMPTS` 中追加该语种的模板（不提供则回退为英文提示词）
+4. 重启服务即可生效
+
+> [!NOTE]
+> 语种自动检测当前仅区分 CJK（中日韩统一表意文字）与 Latin 字符。若新语种与现有语种共用同一文字系统（如法语与英语），建议在向导中手动指定校对语种。
 
 ---
 
@@ -135,9 +161,7 @@ chmod +x detypo
 
 **中文规则库** [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md) 通过 AI 从 [《图书编辑校对实用手册》<sub>（第五版）</sub>](http://bbtpress.com/bookview/1818.html) 中提取整理。
 
-**英文规则库** [`proofreading-rules-en.md`](rules/proofreading-rules-en.md) 基于 [The Chicago Manual of Style <sub>（18th Edition）</sub>](https://www.chicagomanualofstyle.org/) 提取整理。
-
-语种配置位于 [`rules/languages.json`](rules/languages.json)，用户可自行添加新语种：放入 `proofreading-rules-{code}.md` 文件并在 `languages.json` 中注册即可。
+**英文规则库** [`proofreading-rules-en.md`](rules/proofreading-rules-en.md) 通过 AI 从 [*The Chicago Manual of Style* <sub>（18th Edition）</sub>](https://www.chicagomanualofstyle.org/) 中提取整理。
 
 > [!IMPORTANT]
 > 本项目仅用于学术研究和个人使用，使用者应自行评估合规性。
