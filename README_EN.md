@@ -163,7 +163,7 @@ Use the `/add-language` command to automatically generate a rules file and regis
 
 ## Proofreading Rules
 
-**Chinese rules** [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md) were extracted by AI from [*图书编辑校对实用手册* <sub>(5th Edition)</sub>](http://bbtpress.com/bookview/1818.html) (Practical Handbook for Book Editing and Proofreading).
+**Chinese rules** [`proofreading-rules-zh.md`](rules/proofreading-rules-zh.md) were extracted by AI from [*图书编辑校对实用手册* <sub>(5th Edition)</sub>](http://bbtpress.com/bookview/1818.html).
 
 **English rules** [`proofreading-rules-en.md`](rules/proofreading-rules-en.md) were extracted by AI from [*The Chicago Manual of Style* <sub>(18th Edition)</sub>](https://www.chicagomanualofstyle.org/).
 
