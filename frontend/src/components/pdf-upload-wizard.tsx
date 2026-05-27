@@ -4,6 +4,12 @@ import { RangeSlider } from '@/components/range-slider'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Empty, EmptyContent, EmptyDescription, EmptyHeader,
   EmptyMedia, EmptyTitle,
 } from '@/components/ui/empty'
@@ -83,7 +89,6 @@ interface PdfUploadWizardProps {
   fileId: string
   filename: string
   pageTokenCounts: number[]
-  detectedLang: string
   availableLangs: Record<string, string>
   proofLang: string
   onSetProofLang: (lang: string) => void
@@ -94,7 +99,7 @@ interface PdfUploadWizardProps {
 
 export function PdfUploadWizard({
   pageCount, fileId, filename, pageTokenCounts,
-  detectedLang, availableLangs, proofLang, onSetProofLang,
+  availableLangs, proofLang, onSetProofLang,
   onStart, onUpload, onClose,
 }: PdfUploadWizardProps) {
   const { t } = useI18n()
@@ -261,26 +266,31 @@ export function PdfUploadWizard({
               {t('wizard.file_info', { filename, pages: pageCount })}
             </FieldDescription>
           </div>
-          {Object.keys(availableLangs).length > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-xs"
-              onClick={() => {
-                const effective = proofLang === 'auto' ? detectedLang : proofLang
-                const langs = Object.keys(availableLangs)
-                const next = langs[(langs.indexOf(effective) + 1) % langs.length]
-                onSetProofLang(next)
-              }}
-            >
-              {(() => {
-                const effective = proofLang === 'auto' ? detectedLang : proofLang
-                return availableLangs[effective] || effective
-              })()}
-              {proofLang === 'auto' && <span className="text-muted-foreground">(auto)</span>}
-              <ChevronDownIcon className="size-3" />
-            </Button>
-          )}
+          {Object.keys(availableLangs).length > 1 && (() => {
+            const effective = proofLang
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                    {availableLangs[effective] || effective}
+                    <ChevronDownIcon className="size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                  {Object.entries(availableLangs).map(([code, name]) => (
+                    <DropdownMenuCheckboxItem
+                      key={code}
+                      checked={effective === code}
+                      onCheckedChange={() => onSetProofLang(code)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          })()}
         </div>
 
         {/* Page previews */}

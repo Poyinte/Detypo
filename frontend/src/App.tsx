@@ -175,8 +175,7 @@ export default function App() {
   void uiLang // used by child components via context; silence unused-var for now
 
   // Proofreading language
-  const [proofLang, setProofLang] = useState<string>('auto')
-  const [detectedLang, setDetectedLang] = useState<string>('zh')
+  const [proofLang, setProofLang] = useState<string>('zh')
   const [availableLangs, setAvailableLangs] = useState<Record<string, string>>({})
 
   // Language-specific categories and colors (from API)
@@ -340,7 +339,7 @@ export default function App() {
       setFilename(f.name)
       setPageRange(null)
       setPageTokenCounts(d.page_token_counts || [])
-      if (d.detected_lang) setDetectedLang(d.detected_lang)
+      if (d.detected_lang) setProofLang(d.detected_lang)
       if (d.languages) setAvailableLangs(d.languages)
       pushLog('ready')
       fetch(`${API}/api/languages`)
@@ -386,7 +385,7 @@ export default function App() {
     try {
       const url = new URL(`${API}/api/proofread/${fileId}`)
       url.searchParams.set('token', apiKey)
-      url.searchParams.set('lang', proofLang === 'auto' ? detectedLang : proofLang)
+      url.searchParams.set('lang', proofLang)
       if (range) {
         url.searchParams.set('start_page', String(range[0]))
         url.searchParams.set('end_page', String(range[1]))
@@ -631,7 +630,6 @@ export default function App() {
               fileId={fileId || ''}
               filename={filename}
               pageTokenCounts={pageTokenCounts}
-              detectedLang={detectedLang}
               availableLangs={availableLangs}
               proofLang={proofLang}
               onSetProofLang={setProofLang}
