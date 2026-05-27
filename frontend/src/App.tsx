@@ -561,7 +561,7 @@ export default function App() {
         keyStatus={keyStatus}
         onValidateKey={validateKey}
       />
-      <main className="flex flex-1 flex-col min-h-svh overflow-clip">
+      <main className="flex flex-1 flex-col h-svh overflow-hidden">
         {/* ── HEADER ── */}
         <header className="flex h-12 shrink-0 items-center gap-0.5 border-b px-4">
           <SidebarTrigger className="ml-0" />
@@ -762,7 +762,11 @@ export default function App() {
                               'relative cursor-pointer transition-all duration-200 border hover:shadow-lg hover:-translate-y-1 hover:z-10',
                               ex ? 'opacity-40 hover:shadow-none hover:translate-y-0' : 'card-enter'
                             )}
-                            style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 120px' }}
+                            style={{
+                              contentVisibility: 'auto',
+                              containIntrinsicSize: 'auto 120px',
+                              ...(ex ? {} : { animationDelay: `${pageErrors.indexOf(e) * 30}ms`, animationFillMode: 'backwards' }),
+                            }}
                             onClick={() => toggleExclude(e.error_id)}
                             size="sm"
                           >
