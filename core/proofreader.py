@@ -171,6 +171,7 @@ class Proofreader:
 
         # Phase 2b: Process results sequentially (PDF mutations are not thread-safe)
         completed = 0
+        seen_ids: set[str] = set()  # global dedup across all batches
         for result in results:
             if self._stop_flag:
                 yield {"event": "stopped", "data": {"message": "校对已停止"}}
@@ -181,12 +182,14 @@ class Proofreader:
             page_nums = result["page_nums"]
 
             resolved = []
-            seen = set()  # safety net: skip duplicate span IDs
             for err in llm_errors:
                 err_id = err.get("error_id", "").strip()
-                if err_id in seen:
+                # Normalize: LLM may return "#0001" or "0001" — make consistent
+                if not err_id.startswith("#"):
+                    err_id = f"#{err_id}"
+                if err_id in seen_ids:
                     continue
-                seen.add(err_id)
+                seen_ids.add(err_id)
                 info = self._annotator.lookup(err_id)
                 if info is None:
                     continue

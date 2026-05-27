@@ -280,7 +280,9 @@ export default function App() {
       }
       case 'page_done':
         setErrors(prev => {
-          const next = [...prev, ...(d.errors || [])]
+          const seen = new Set(prev.map(e => e.error_id))
+          const fresh = (d.errors || []).filter((e: ErrorItem) => !seen.has(e.error_id))
+          const next = [...prev, ...fresh]
           next.sort((a, b) => a.page - b.page)
           return next
         }); errCountRef.current += (d.errors?.length || 0)
