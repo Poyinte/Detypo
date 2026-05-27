@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/empty'
 import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIcon, XIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { useI18n } from '@/i18n'
 
 const API = 'http://127.0.0.1:8000'
 
@@ -90,6 +91,7 @@ interface PdfUploadWizardProps {
 export function PdfUploadWizard({
   pageCount, fileId, filename, pageTokenCounts, onStart, onUpload, onClose,
 }: PdfUploadWizardProps) {
+  const { t } = useI18n()
   const [dragOver, setDragOver] = useState(false)
   const [range, setRange] = useState<[number, number]>([1, pageCount])
   const [leftInput, setLeftInput] = useState('1')
@@ -195,7 +197,7 @@ export function PdfUploadWizard({
       e.preventDefault(); setDragOver(false)
       const file = e.dataTransfer?.files?.[0]
       if (file && file.name.endsWith('.pdf')) { onUpload(file) }
-      else if (file) { toast.error('仅支持 PDF 文件') }
+      else if (file) { toast.error(t('wizard.only_pdf')) }
     }
     return () => {
       el.ondragover = null
@@ -215,15 +217,15 @@ export function PdfUploadWizard({
         <Empty className="border-0 p-0">
           <EmptyHeader>
             <EmptyMedia variant="icon"><FileUpIcon /></EmptyMedia>
-            <EmptyTitle>上传 PDF 文件</EmptyTitle>
+            <EmptyTitle>{t('wizard.drop_title')}</EmptyTitle>
             <EmptyDescription>
-              拖入或点击下方按钮选择所要校对的 PDF 文件
+              {t('wizard.drop_hint')}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Button variant="outline" size="sm" onClick={() => onUpload()}>
               <FileSearchCornerIcon className="size-3.5" />
-              选择 PDF 文件
+              {t('wizard.pick_file')}
             </Button>
           </EmptyContent>
         </Empty>
@@ -247,16 +249,16 @@ export function PdfUploadWizard({
         </button>
         <Field className="w-full rounded-xl border bg-card p-5 shadow-sm gap-3">
         <div>
-          <span className="text-base font-semibold">选择校对范围</span>
+          <span className="text-base font-semibold">{t('wizard.range_title')}</span>
           <FieldDescription className="mt-0.5">
-            {filename} · 共 {pageCount} 页
+            {t('wizard.file_info', { filename, pages: pageCount })}
           </FieldDescription>
         </div>
 
         {/* Page previews */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col items-center gap-1 rounded-lg border bg-muted/10 p-2">
-            <span className="text-[10px] text-muted-foreground">起始页 · 第 {range[0]} 页</span>
+            <span className="text-[10px] text-muted-foreground">{t('wizard.start_page', { page: range[0] })}</span>
             <div className="w-full aspect-[3/4] bg-muted rounded overflow-hidden">
               {leftPreview && (
                 <img src={leftPreview} alt={`Page ${range[0]}`} className="w-full h-full object-contain" />
@@ -264,7 +266,7 @@ export function PdfUploadWizard({
             </div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-lg border bg-muted/10 p-2">
-            <span className="text-[10px] text-muted-foreground">结束页 · 第 {range[1]} 页</span>
+            <span className="text-[10px] text-muted-foreground">{t('wizard.end_page', { page: range[1] })}</span>
             <div className="w-full aspect-[3/4] bg-muted rounded overflow-hidden">
               {rightPreview && (
                 <img src={rightPreview} alt={`Page ${range[1]}`} className="w-full h-full object-contain" />
@@ -304,14 +306,14 @@ export function PdfUploadWizard({
 
         {/* Stats */}
         <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-          <span>总计 {selectedPages} 页</span>
-          <span>预计用量 {fmtCount(estimates.tokens)} tokens · ¥{estimates.cost.toFixed(2)}</span>
+          <span>{t('wizard.total_pages', { count: selectedPages })}</span>
+          <span>{t('wizard.est_tokens', { tokens: fmtCount(estimates.tokens), cost: estimates.cost.toFixed(2) })}</span>
         </div>
 
         {/* Start button */}
         <Button className="w-full" size="lg" onClick={() => onStart(range)}>
           <PlayIcon className="size-4" />
-          开始校对
+          {t('wizard.start_btn')}
         </Button>
       </Field>
       </div>
