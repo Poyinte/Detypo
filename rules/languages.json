@@ -1,0 +1,25 @@
+{
+  "zh": {
+    "name": "中文",
+    "prompt_lang": "zh",
+    "categories": {
+      "用字错误": "#D44545",
+      "用词不当": "#D4A86E",
+      "语法错误": "#6E9ED4",
+      "标点符号": "#45D46E",
+      "数字用法": "#A86ED4",
+      "政治敏感": "#D46E9E"
+    }
+  },
+  "en": {
+    "name": "English",
+    "prompt_lang": "en",
+    "categories": {
+      "Spelling": "#D44545",
+      "Grammar": "#6E9ED4",
+      "Punctuation": "#45D46E",
+      "Style": "#D4A86E",
+      "Typography": "#A86ED4"
+    }
+  }
+}
