@@ -17,7 +17,7 @@ import { FileUp as FileUpIcon, FileSearchCorner as FileSearchCornerIcon, PlayIco
 import { toast } from 'sonner'
 import { useI18n } from '@/i18n'
 
-const API = 'http://127.0.0.1:8520'
+const API = ''  // relative URLs — Vite proxies /api in dev, same-origin in prod
 
 function fmtCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`

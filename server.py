@@ -396,14 +396,36 @@ async def serve_frontend(full_path: str):
 
 
 if __name__ == "__main__":
+    import socket
     import uvicorn, subprocess, platform
-    if platform.system() == "Windows":
+
+    def _port_available(host: str, port: int) -> bool:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind((host, port))
+                return True
+        except OSError:
+            return False
+
+    # Find first available port starting from the configured default
+    active_port = PORT
+    for offset in range(10):
+        if _port_available(HOST, active_port):
+            break
+        print(f"[startup] Port {active_port} unavailable, trying next...")
+        active_port = PORT + offset + 1
+    else:
+        print(f"[startup] ERROR: No available port in range {PORT}-{PORT + 10}")
+        exit(1)
+
+    if platform.system() == "Windows" and not _port_available(HOST, active_port):
+        # If the port we picked is occupied (stale process), kill it and reclaim
         out = subprocess.check_output(["netstat", "-ano"], text=True)
         for line in out.splitlines():
-            if f"{HOST}:{PORT}" in line and "LISTENING" in line:
+            if f"{HOST}:{active_port}" in line and "LISTENING" in line:
                 pid = line.strip().split()[-1]
                 subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True)
-                print(f"[startup] Killed old process PID {pid} on port {PORT}")
+                print(f"[startup] Killed old process PID {pid} on port {active_port}")
                 break
     # Disable ANSI color codes in uvicorn logs (CMD terminal compatibility)
     log_config = uvicorn.config.LOGGING_CONFIG
@@ -412,4 +434,5 @@ if __name__ == "__main__":
     # Prod mode: single process (no reload worker that survives window close)
     use_reload = os.getenv("DETYPO_PROD", "0") != "1"
     reload_dirs = [str(Path(__file__).parent / d) for d in ("core", "utils", "rules")] + [str(Path(__file__))]
-    uvicorn.run("server:app", host=HOST, port=PORT, reload=use_reload, log_config=log_config, reload_dirs=reload_dirs)
+    print(f"[startup] Starting on {HOST}:{active_port}")
+    uvicorn.run("server:app", host=HOST, port=active_port, reload=use_reload, log_config=log_config, reload_dirs=reload_dirs)

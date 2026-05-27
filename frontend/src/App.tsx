@@ -234,7 +234,7 @@ export default function App() {
     }, 1000)
   }, [])
 
-  const API = 'http://127.0.0.1:8520'
+  const API = ''  // relative URLs — Vite proxies /api in dev, same-origin in prod
 
   // Load balance on mount
   useEffect(() => {
