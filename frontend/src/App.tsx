@@ -132,9 +132,8 @@ export default function App() {
 
   const [totalTokens, setTotalTokens] = useState(0)
   const [proofCost, setProofCost] = useState(0)
-  const [balance, setBalance] = useState('')
-  const [balanceCurrency, setBalanceCurrency] = useState('CNY')
-  const balanceRef = useRef('')
+  const [balances, setBalances] = useState<Record<string, string>>({})
+  const balancesRef = useRef<Record<string, string>>({})
   const [filename, setFilename] = useState('')
   const [pageRange, setPageRange] = useState<[number, number] | null>(null)
   const [pageTokenCounts, setPageTokenCounts] = useState<number[]>([])
@@ -173,13 +172,11 @@ export default function App() {
 
   // UI language
   const { t, uiLang } = useI18n()
-  // Display currency: API returns balance in CNY or USD;
-  // convert if it doesn't match the UI language preference
-  const toDisplay = (value: number, fromCurrency: string) => {
-    if (uiLang === 'en' && fromCurrency === 'CNY') return value * 0.14  // CNY → USD
-    if (uiLang === 'zh' && fromCurrency === 'USD') return value / 0.14  // USD → CNY
-    return value  // no conversion needed
-  }
+  const displayCurrency = uiLang === 'en' ? 'USD' : 'CNY'
+  // Display balance: pick the matching currency from API response
+  const displayBalance = balances[displayCurrency] || balances['CNY'] || '0'
+  // Cost is always CNY (DeepSeek billing currency); convert if showing USD
+  const displayCost = displayCurrency === 'USD' ? proofCost * 0.14 : proofCost
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -251,7 +248,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ api_key: apiKey }),
     }).then(r => r.json()).then(d => {
-      if (d.balance) { setBalance(d.balance); setBalanceCurrency(d.currency || 'CNY') }
+      if (d.balances) setBalances(d.balances)
     }).catch(() => {})
   }, []) // eslint-disable-line
 
@@ -321,11 +318,11 @@ export default function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey }),
           }).then(r => r.json()).then(d => {
-            const after = parseFloat(d.balance || '0')
-            const before = parseFloat(balanceRef.current || '0')
+            const newBalances: Record<string, string> = d.balances || {}
+            const after = parseFloat(newBalances['CNY'] || '0')
+            const before = parseFloat(balancesRef.current['CNY'] || '0')
             const cost = Math.max(0, before - after)
-            setBalance(d.balance || '')
-            if (d.currency) setBalanceCurrency(d.currency)
+            if (d.balances) setBalances(d.balances)
             setProofCost(cost)
             if (attempt < 6) {
               const delays = [5, 10, 20, 40, 70, 155]
@@ -405,7 +402,8 @@ export default function App() {
         body: JSON.stringify({ api_key: apiKey }),
       })
       const balData = await balResp.json()
-      balanceRef.current = balData.balance || '0'
+      balancesRef.current = balData.balances || {}
+      if (balData.balances) setBalances(balData.balances)
     } catch { /* balance fetch is best-effort */ }
     errCountRef.current = 0
     startTimer()
@@ -485,7 +483,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: key }),
         }).then(r => r.json()).then(d => {
-          if (d.balance) { setBalance(d.balance); setBalanceCurrency(d.currency || 'CNY') }
+          if (d.balances) setBalances(d.balances)
         }).catch(() => {})
       } else { setKeyStatus('fail') }
     } catch { setKeyStatus('error') }
@@ -914,15 +912,15 @@ export default function App() {
                 {!showElapsed && proofCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
-                    <span>{t('status.cost', { cost: toDisplay(proofCost, balanceCurrency).toFixed(2) })}</span>
+                    <span>{t('status.cost', { cost: displayCost.toFixed(2) })}</span>
                   </>
                 )}
               </>
             )}
-            {balance && (
+            {displayBalance && parseFloat(displayBalance) > 0 && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>{t('status.balance', { balance: toDisplay(parseFloat(balance), balanceCurrency).toFixed(2) })}</span>
+                <span>{t('status.balance', { balance: parseFloat(displayBalance).toFixed(2) })}</span>
               </>
             )}
           </div>
