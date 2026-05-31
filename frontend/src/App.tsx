@@ -172,9 +172,7 @@ export default function App() {
   const [keyOk, setKeyOk] = useState(false)
 
   // UI language
-  const { t, uiLang } = useI18n()
-  // Balance/cost are always CNY (DeepSeek billing currency); convert for English UI
-  const toDisplay = (cny: number) => uiLang === 'en' ? cny * 0.14 : cny
+  const { t } = useI18n()
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -910,7 +908,7 @@ export default function App() {
                 {!showElapsed && proofCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
-                    <span>{t('status.cost', { cost: toDisplay(proofCost).toFixed(2) })}</span>
+                    <span>{t('status.cost', { cost: proofCost.toFixed(2) })}</span>
                   </>
                 )}
               </>
@@ -918,7 +916,7 @@ export default function App() {
             {balance && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>{t('status.balance', { balance: toDisplay(parseFloat(balance)).toFixed(2) })}</span>
+                <span>{t('status.balance', { balance: parseFloat(balance).toFixed(2) })}</span>
               </>
             )}
           </div>

@@ -40,11 +40,10 @@ function mode(arr: number[]): number {
   return bestVal
 }
 
-// Official DeepSeek v4-flash pricing per 1M tokens
-const PRICING = {
-  cny: { inputMiss: 1.0, inputHit: 0.02, output: 2.0, symbol: '¥' },
-  usd: { inputMiss: 0.14, inputHit: 0.0028, output: 0.28, symbol: '$' },
-}
+// Official DeepSeek v4-flash pricing per 1M tokens (CNY)
+const INPUT_MISS = 1.0   // ¥1.0 per 1M input tokens (cache miss)
+const INPUT_HIT  = 0.02  // ¥0.02 per 1M input tokens (cache hit)
+const OUTPUT     = 2.0   // ¥2.0 per 1M output tokens
 
 export interface TokenOverhead {
   sys: number       // system prompt tokens (real count from tokenizer)
@@ -55,7 +54,6 @@ export interface TokenOverhead {
 
 function estimateTokens(
   pageTokenCounts: number[], start: number, end: number,
-  currency: 'CNY' | 'USD' = 'CNY',
   overhead?: TokenOverhead,
 ): { tokens: number; cost: number } {
   const selected = pageTokenCounts.slice(start - 1, end)
@@ -109,11 +107,10 @@ function estimateTokens(
   // Token estimate (all batches, full count)
   const totalTokens = numBatches * perBatchTotal
 
-  // Cost estimate: 70% cache hit for system prompt
-  const p = PRICING[currency.toLowerCase() as 'cny' | 'usd']
-  const sysPerBatch = SYS * (0.3 * p.inputMiss + 0.7 * p.inputHit)
-  const textPerBatch = (perBatchText + modePages * PER_PAGE + PER_BATCH + avgContextTextPerBatch) * p.inputMiss
-  const outPerBatch = replyTokens * p.output
+  // Cost estimate (CNY): 70% cache hit for system prompt
+  const sysPerBatch = SYS * (0.3 * INPUT_MISS + 0.7 * INPUT_HIT)
+  const textPerBatch = (perBatchText + modePages * PER_PAGE + PER_BATCH + avgContextTextPerBatch) * INPUT_MISS
+  const outPerBatch = replyTokens * OUTPUT
   const totalCost = numBatches * (sysPerBatch + textPerBatch + outPerBatch) / 1_000_000
 
   return { tokens: totalTokens, cost: totalCost }
@@ -138,13 +135,12 @@ export function PdfUploadWizard({
   availableLangs, proofLang, onSetProofLang,
   onStart, onUpload, onClose,
 }: PdfUploadWizardProps) {
-  const { t, uiLang } = useI18n()
+  const { t } = useI18n()
   const [dragOver, setDragOver] = useState(false)
   const [range, setRange] = useState<[number, number]>([1, pageCount])
   const [leftInput, setLeftInput] = useState('1')
   const [rightInput, setRightInput] = useState(String(pageCount))
   const [estimates, setEstimates] = useState({ tokens: 0, cost: 0 })
-  const currency = uiLang === 'en' ? 'USD' as const : 'CNY' as const
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Synchronize range when pageCount changes (new PDF loaded)
@@ -168,14 +164,14 @@ export function PdfUploadWizard({
     prevRangeRef.current = key
     clearTimeout(debounceRef.current)
     if (immediate) {
-      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency, overhead))
+      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, overhead))
       return
     }
     debounceRef.current = setTimeout(() => {
-      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency, overhead))
+      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, overhead))
     }, 400)
     return () => clearTimeout(debounceRef.current)
-  }, [rangeStart, rangeEnd, pageTokenCounts, currency, overhead])
+  }, [rangeStart, rangeEnd, pageTokenCounts, overhead])
 
   const selectedPages = range[1] - range[0] + 1
 

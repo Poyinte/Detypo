@@ -164,8 +164,8 @@ const translations: Record<UILang, Record<string, string>> = {
     'status.tokens': '{tokens} tokens',
     'status.cache_hit': '{tokens} cached ({pct}%)',
     'status.cache_miss': '{tokens} uncached',
-    'status.cost': '${cost} spent',
-    'status.balance': '${balance} balance',
+    'status.cost': '¥{cost} spent',
+    'status.balance': '¥{balance} balance',
 
     // Wizard
     'wizard.drop_title': 'Upload PDF File',
@@ -177,7 +177,7 @@ const translations: Record<UILang, Record<string, string>> = {
     'wizard.start_page': 'Start · Page {page}',
     'wizard.end_page': 'End · Page {page}',
     'wizard.total_pages': '{count} pages total',
-    'wizard.est_tokens': 'Est. {tokens} tokens · ${cost}',
+    'wizard.est_tokens': 'Est. {tokens} tokens · ¥{cost}',
     'wizard.start_btn': 'Start Proofreading',
     'wizard.only_pdf': 'Only PDF files are supported',
 
