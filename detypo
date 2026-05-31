@@ -48,11 +48,21 @@ if [ -z "$PYTHON" ]; then
     exit 1
 fi
 
-# ── Find an available port (scan range, fallback to OS-assigned) ──
+# ── Find an available port (prefer last-used, scan range, fallback to OS-assigned) ──
 find_port() {
-    local start=${1:-8520} count=${2:-50}
+    local start=${1:-8520} count=${2:-50} preferred=${3:-0}
     $PYTHON -c "
 import socket
+preferred = $preferred
+if preferred:
+    try:
+        s = socket.socket()
+        s.bind(('127.0.0.1', preferred))
+        s.close()
+        print(preferred)
+        exit()
+    except OSError:
+        pass
 for p in range($start, $start + $count):
     try:
         s = socket.socket()
@@ -70,9 +80,10 @@ else:
 "
 }
 
-# ── Detect ports ──
-BACKEND_PORT=$(find_port 8520 50)
-FRONTEND_PORT=$(find_port 5173 10)
+# ── Detect ports: reuse last port if still available ──
+PREFERRED_PORT=$(cat "$PORT_FILE" 2>/dev/null || echo 0)
+BACKEND_PORT=$(find_port 8520 50 "$PREFERRED_PORT")
+FRONTEND_PORT=$(find_port 5173 10 0)
 
 # ── Kill port (Windows + Unix) ──
 kill_port() {

@@ -41,15 +41,27 @@ exit /b 1
 
 :: ---- Write a tiny Python script to find an available port ----
 :: Uses individual echo lines instead of a block to avoid () escaping issues.
-echo import socket > "%TMP_PY%"
+:: Accepts an optional preferred port as first argument.
+echo import socket, sys > "%TMP_PY%"
+echo preferred = int(sys.argv[1]) if len(sys.argv) ^> 1 else 0 >> "%TMP_PY%"
 echo s = socket.socket() >> "%TMP_PY%"
-echo s.bind(("127.0.0.1", 0)) >> "%TMP_PY%"
+echo try: >> "%TMP_PY%"
+echo   if preferred: s.bind(("127.0.0.1", preferred)) >> "%TMP_PY%"
+echo   else: s.bind(("127.0.0.1", 0)) >> "%TMP_PY%"
+echo except OSError: >> "%TMP_PY%"
+echo   s.bind(("127.0.0.1", 0)) >> "%TMP_PY%"
 echo print(s.getsockname()[1]) >> "%TMP_PY%"
 echo s.close() >> "%TMP_PY%"
 
-:: ---- Find available ports ----
-for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%"`) do set "BACKEND_PORT=%%p"
-for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%"`) do set "FRONTEND_PORT=%%p"
+:: ---- Find backend port: reuse last port if still available ----
+set "PREFERRED_PORT=0"
+if exist "%PORT_FILE%" (
+    set /p PREFERRED_PORT=<"%PORT_FILE%"
+)
+for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%" !PREFERRED_PORT!`) do set "BACKEND_PORT=%%p"
+
+:: ---- Find frontend port ----
+for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%" 0`) do set "FRONTEND_PORT=%%p"
 del "%TMP_PY%" >nul 2>&1
 
 :: ---- Check Node ----
