@@ -26,6 +26,7 @@ Bilingual (ZH/EN) PDF proofreading tool — uses AI to spot common mistakes<br>
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> Features
 
 - **Fast Proofreading** — Uses `deepseek-v4-flash` for quick and accurate error detection
+- **Cross-Batch Context** — Passes adjacent-page context during proofreading, reducing false positives at page boundaries
 - **Review and Filter** — Browse findings after proofreading, accept or reject individual items
 - **Traceable Annotations** — Exported PDFs include detailed, locatable annotations for easy verification
 - **Bilingual Support** — Auto-detects document language and switches to the corresponding rule set
@@ -95,7 +96,7 @@ cd Detypo
 
 # Double-click detypo.bat (production mode — builds frontend, check terminal for URL)
 # Or from the command line:
-detypo.bat              # Production mode (default), serves on :8520
+detypo.bat              # Production mode (default), port auto-detected — check terminal for URL
 detypo.bat dev          # Development mode (hot-reload), browser at :5173
 detypo.bat stop         # Stop background services
 ```
@@ -142,12 +143,18 @@ Use the `/add-language` command to automatically generate a rules file and regis
 ```jsonc
 "ja": {
   "name": "日本語",                    // Display name
-  "categories": {                     // Error categories : hex color
+  "prompt_lang": "ja",                 // Prompt language code
+  "sentence_separators": "。！？",      // Sentence boundary punctuation
+  "context_sentences": 2,              // Sentences to pass as cross-batch context
+  "context_prefix_prompt": "上文参考…", // Prefix context header
+  "context_suffix_prompt": "下文参考…", // Suffix context header
+  "proofread_instruction": "…",        // Main proofreading instruction
+  "categories": {                      // Error categories : hex color
     "表記": "#D44545",                
     "文法": "#6E9ED4",                
     "数字": "#D4A86E"                 
   },
-  "system_prompt": "…{rules}…{categories}…",  // Prompt template; {rules} and {categories} are replaced at runtime (required)
+  "system_prompt": "…{rules}…{categories}…",  // Prompt template (required)
   "false_reasons": ["誤りなし", "正しい"]       // False-positive filter keywords (optional)
 }
 ```
