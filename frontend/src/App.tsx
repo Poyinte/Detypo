@@ -131,7 +131,8 @@ export default function App() {
   }, [showElapsed])
 
   const [totalTokens, setTotalTokens] = useState(0)
-  const [proofCost, setProofCost] = useState(0)
+  const [proofCostCNY, setProofCostCNY] = useState(0)
+  const [proofCostUSD, setProofCostUSD] = useState(0)
   const [balances, setBalances] = useState<Record<string, string>>({})
   const balancesRef = useRef<Record<string, string>>({})
   const [filename, setFilename] = useState('')
@@ -175,8 +176,9 @@ export default function App() {
   const displayCurrency = uiLang === 'en' ? 'USD' : 'CNY'
   // Display balance: pick the matching currency from API response
   const displayBalance = balances[displayCurrency] || balances['CNY'] || '0'
-  // Cost is always CNY (DeepSeek billing currency); convert if showing USD
-  const displayCost = displayCurrency === 'USD' ? proofCost * 0.14 : proofCost
+  // Cost computed from actual balance deltas per currency — no manual conversion
+  const displayCost = displayCurrency === 'USD' && proofCostUSD > 0
+    ? proofCostUSD : proofCostCNY
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -319,11 +321,13 @@ export default function App() {
             body: JSON.stringify({ api_key: apiKey }),
           }).then(r => r.json()).then(d => {
             const newBalances: Record<string, string> = d.balances || {}
-            const after = parseFloat(newBalances['CNY'] || '0')
-            const before = parseFloat(balancesRef.current['CNY'] || '0')
-            const cost = Math.max(0, before - after)
+            const beforeCNY = parseFloat(balancesRef.current['CNY'] || '0')
+            const afterCNY = parseFloat(newBalances['CNY'] || '0')
+            const beforeUSD = parseFloat(balancesRef.current['USD'] || '0')
+            const afterUSD = parseFloat(newBalances['USD'] || '0')
             if (d.balances) setBalances(d.balances)
-            setProofCost(cost)
+            setProofCostCNY(Math.max(0, beforeCNY - afterCNY))
+            setProofCostUSD(Math.max(0, beforeUSD - afterUSD))
             if (attempt < 6) {
               const delays = [5, 10, 20, 40, 70, 155]
               setTimeout(() => checkBalance(attempt + 1), delays[attempt] * 1000)
@@ -909,7 +913,7 @@ export default function App() {
                 <span>{t('status.tokens', { tokens: fmtTokens(totalTokens) })}</span>
                 <Separator orientation="vertical" className="h-3" />
                 <span>{t('status.cache_hit', { tokens: fmtTokens(cacheHitTokens), pct: totalTokens > 0 ? Math.round(cacheHitTokens / totalTokens * 100) : 0 })}</span>
-                {!showElapsed && proofCost > 0 && (
+                {!showElapsed && displayCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
                     <span>{t('status.cost', { cost: displayCost.toFixed(2) })}</span>
