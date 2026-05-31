@@ -109,19 +109,8 @@ class Proofreader:
                 prefix_context=prefix or None,
                 suffix_context=suffix or None,
             )
-            # DeepSeek v4 usage response fields:
-            # Top-level: prompt_cache_hit_tokens, prompt_cache_miss_tokens
-            # OpenAI-compat: prompt_tokens_details.cached_tokens
-            # Log first batch's usage keys to detect API format changes
-            if not hasattr(self, '_usage_logged'):
-                import json as _json
-                print(f"[usage] keys={list(usage.keys())} detail_keys={list(usage.get('prompt_tokens_details', {}).keys())}", flush=True)
-                self._usage_logged = True
-            cache_hit = (usage.get("prompt_cache_hit_tokens")
-                         or usage.get("prompt_tokens_details", {}).get("cached_tokens")
-                         or usage.get("cache_read_input_tokens")  # some proxy formats
-                         or 0)
-            cache_miss = usage.get("prompt_cache_miss_tokens") or usage.get("cache_creation_input_tokens") or 0
+            cache_hit = usage.get("prompt_cache_hit_tokens") or usage.get("prompt_tokens_details", {}).get("cached_tokens") or 0
+            cache_miss = usage.get("prompt_cache_miss_tokens") or 0
             total = usage.get("total_tokens", 0)
             return {
                 "llm_errors": llm_errors,
