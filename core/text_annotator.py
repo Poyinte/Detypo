@@ -120,7 +120,7 @@ class TextAnnotator:
             if text:
                 all_text.append(text)
             all_map.update(pmap)
-        return "\n".join(all_text), all_map
+        return "".join(all_text), all_map
 
     def lookup(self, annot_id: str) -> dict | None:
         clean_id = annot_id.strip("[]").strip()
