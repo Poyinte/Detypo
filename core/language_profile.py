@@ -19,6 +19,9 @@ class LanguageProfile:
     false_reasons: list[str] # keywords for false-positive filtering
     sentence_separators: str = "。！？"  # sentence boundary punctuation
     context_sentences: int = 2            # sentences to include as context
+    context_prefix_prompt: str = ""       # header before prefix context
+    context_suffix_prompt: str = ""       # header before suffix context
+    proofread_instruction: str = ""       # main proofreading instruction
 
 
 # ── Fallback defaults (used when languages.json omits a field) ──
@@ -82,6 +85,9 @@ def load_profiles(rules_dir: str, languages_json_path: str) -> dict[str, Languag
             false_reasons=cfg.get("false_reasons", _FALLBACK_FALSE_REASONS),
             sentence_separators=cfg.get("sentence_separators", "。！？"),
             context_sentences=cfg.get("context_sentences", 2),
+            context_prefix_prompt=cfg.get("context_prefix_prompt", ""),
+            context_suffix_prompt=cfg.get("context_suffix_prompt", ""),
+            proofread_instruction=cfg.get("proofread_instruction", ""),
         )
     return profiles
 

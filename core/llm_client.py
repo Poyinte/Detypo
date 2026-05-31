@@ -77,28 +77,16 @@ class LlmClient:
 
         # Build user message with optional bidirectional context
         parts = []
-        zh = profile.code == "zh"
 
         if prefix_context:
-            parts.append(
-                "上文参考，请勿校对上文内容，仅用于理解语境：\n" + prefix_context
-                if zh else
-                "Context from preceding text — for reference only, do NOT proofread:\n" + prefix_context
-            )
+            parts.append(profile.context_prefix_prompt + "\n" + prefix_context)
             parts.append("---")
 
-        parts.append(
-            f"请校对以下文本：\n\n{annotated_text}" if zh
-            else f"Please proofread the following text:\n\n{annotated_text}"
-        )
+        parts.append(profile.proofread_instruction + "\n\n" + annotated_text)
 
         if suffix_context:
             parts.append("---")
-            parts.append(
-                "下文参考，请勿校对下文内容，仅用于理解语境：\n" + suffix_context
-                if zh else
-                "Context from following text — for reference only, do NOT proofread:\n" + suffix_context
-            )
+            parts.append(profile.context_suffix_prompt + "\n" + suffix_context)
 
         user_content = "\n".join(parts)
 
