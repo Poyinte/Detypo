@@ -2,7 +2,7 @@
 
 Detypo is a Chinese/English PDF proofreading tool that uses the DeepSeek API to automatically detect typos, grammar errors, punctuation mistakes, and non-compliant expressions. Results are overlaid as color-coded annotations on the original PDF for easy review.
 
-Made with FastAPI, React 19, and shadcn/ui.
+<sub>Vibe Coding with DeepSeek V4</sub>
 
 ## Key Capabilities
 
