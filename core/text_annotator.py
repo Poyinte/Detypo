@@ -118,7 +118,7 @@ class TextAnnotator:
         for pn in page_range:
             text, pmap = self.annotate(pn)
             if text:
-                all_text.append(f"[PAGE{pn + 1}]\n{text}")
+                all_text.append(text)
             all_map.update(pmap)
         return "\n".join(all_text), all_map
 

@@ -79,7 +79,7 @@ function estimateTokens(
 
   // Use real tokenizer counts when available, fall back to estimates
   const SYS = overhead?.sys ?? 5200
-  const PER_PAGE = overhead?.per_page ?? 350
+  const PER_PAGE = overhead?.per_page ?? 300
   const PER_BATCH = overhead?.per_batch ?? 165
 
   // Compute actual context text tokens from boundary sentence counts

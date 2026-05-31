@@ -57,9 +57,8 @@ class Proofreader:
 
         # ── Phase 1.5: Extract cross-batch context ──
         def _strip_ids(text: str) -> str:
-            """Remove [#NNNN] span IDs and [PAGEN] markers, keeping plain text."""
+            """Remove [#NNNN] span IDs, keeping plain text."""
             text = re.sub(r'\[#\d{4}\]', '', text)    # [#0001]
-            text = re.sub(r'\[PAGE\d+\]', '', text)   # [PAGE1]
             return text.strip()
 
         def _split_sentences(text: str, separators: str) -> list[str]:

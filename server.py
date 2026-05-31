@@ -109,7 +109,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     overhead = {
         "sys": sys_tokens,
-        "per_page": 350,   # ID markers per page (estimate — span count varies)
+        "per_page": 300,   # ID markers per page (estimate — span count varies)
         "per_batch": batch_overhead_tokens,
         "boundary_tokens": boundary_tokens,  # [{head, tail}] per page
     }
