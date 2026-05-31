@@ -46,7 +46,7 @@ class Proofreader:
             batch_end = min(i + batch_size, end_page)
             batch_range = range(i, batch_end)
             page_nums = list(range(i + 1, batch_end + 1))
-            annotated_text, _ = self._annotator.annotate_pages(batch_range, self._profile.code)
+            annotated_text, _ = self._annotator.annotate_pages(batch_range)
             if annotated_text.strip():
                 batches.append((annotated_text, batch_range, page_nums))
             i = batch_end
@@ -60,7 +60,6 @@ class Proofreader:
             """Remove [#NNNN] span IDs and [PAGEN] markers, keeping plain text."""
             text = re.sub(r'\[#\d{4}\]', '', text)    # [#0001]
             text = re.sub(r'\[PAGE\d+\]', '', text)   # [PAGE1]
-            text = re.sub(r' {2,}', ' ', text)         # collapse multi-space gaps
             return text.strip()
 
         def _split_sentences(text: str, separators: str) -> list[str]:

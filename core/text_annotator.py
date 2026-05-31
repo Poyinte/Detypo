@@ -80,7 +80,7 @@ class TextAnnotator:
                 merged.append((seg_text, seg_bbox))
         return merged
 
-    def annotate(self, page_num: int, lang_code: str = "") -> tuple[str, dict]:
+    def annotate(self, page_num: int) -> tuple[str, dict]:
         text_dict = self._engine.get_page_text_dict(page_num)
         parts = []
         page_map = {}
@@ -108,19 +108,15 @@ class TextAnnotator:
                     sid = self._make_id(self._counter)
                     page_map[sid] = {"page": page_num, "bbox": seg_bbox}
                     self._id_map[sid] = {"page": page_num, "bbox": seg_bbox}
-                    # CJK text has no inter-word spaces — keep tags tight
-                    if lang_code == "zh":
-                        parts.append(f"[{sid}]{seg_text}")
-                    else:
-                        parts.append(f" [{sid}] {seg_text}")
+                    parts.append(f"[{sid}]{seg_text}")
 
         return "".join(parts), page_map
 
-    def annotate_pages(self, page_range: range, lang_code: str = "") -> tuple[str, dict]:
+    def annotate_pages(self, page_range: range) -> tuple[str, dict]:
         all_text = []
         all_map = {}
         for pn in page_range:
-            text, pmap = self.annotate(pn, lang_code)
+            text, pmap = self.annotate(pn)
             if text:
                 all_text.append(f"[PAGE{pn + 1}]\n{text}")
             all_map.update(pmap)
