@@ -133,6 +133,7 @@ export default function App() {
   const [totalTokens, setTotalTokens] = useState(0)
   const [proofCost, setProofCost] = useState(0)
   const [balance, setBalance] = useState('')
+  const [balanceCurrency, setBalanceCurrency] = useState('CNY')
   const balanceRef = useRef('')
   const [filename, setFilename] = useState('')
   const [pageRange, setPageRange] = useState<[number, number] | null>(null)
@@ -172,7 +173,13 @@ export default function App() {
 
   // UI language
   const { t, uiLang } = useI18n()
-  const toDisplay = (cny: number) => uiLang === 'en' ? cny * 0.14 : cny  // CNY → USD at official rate
+  // Display currency: API returns balance in CNY or USD;
+  // convert if it doesn't match the UI language preference
+  const toDisplay = (value: number, fromCurrency: string) => {
+    if (uiLang === 'en' && fromCurrency === 'CNY') return value * 0.14  // CNY → USD
+    if (uiLang === 'zh' && fromCurrency === 'USD') return value / 0.14  // USD → CNY
+    return value  // no conversion needed
+  }
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -244,7 +251,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ api_key: apiKey }),
     }).then(r => r.json()).then(d => {
-      if (d.balance) setBalance(d.balance)
+      if (d.balance) { setBalance(d.balance); setBalanceCurrency(d.currency || 'CNY') }
     }).catch(() => {})
   }, []) // eslint-disable-line
 
@@ -318,6 +325,7 @@ export default function App() {
             const before = parseFloat(balanceRef.current || '0')
             const cost = Math.max(0, before - after)
             setBalance(d.balance || '')
+            if (d.currency) setBalanceCurrency(d.currency)
             setProofCost(cost)
             if (attempt < 6) {
               const delays = [5, 10, 20, 40, 70, 155]
@@ -477,7 +485,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: key }),
         }).then(r => r.json()).then(d => {
-          if (d.balance) setBalance(d.balance)
+          if (d.balance) { setBalance(d.balance); setBalanceCurrency(d.currency || 'CNY') }
         }).catch(() => {})
       } else { setKeyStatus('fail') }
     } catch { setKeyStatus('error') }
@@ -906,7 +914,7 @@ export default function App() {
                 {!showElapsed && proofCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
-                    <span>{t('status.cost', { cost: toDisplay(proofCost).toFixed(2) })}</span>
+                    <span>{t('status.cost', { cost: toDisplay(proofCost, balanceCurrency).toFixed(2) })}</span>
                   </>
                 )}
               </>
@@ -914,7 +922,7 @@ export default function App() {
             {balance && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>{t('status.balance', { balance: toDisplay(parseFloat(balance)).toFixed(2) })}</span>
+                <span>{t('status.balance', { balance: toDisplay(parseFloat(balance), balanceCurrency).toFixed(2) })}</span>
               </>
             )}
           </div>

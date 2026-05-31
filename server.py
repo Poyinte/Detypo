@@ -328,7 +328,7 @@ async def check_api_key(body: ApiKeyCheck):
 async def get_balance(body: ApiKeyCheck):
     key = body.api_key.strip()
     if not key.startswith("sk-"):
-        return {"balance": "0", "error": "API Key 格式错误"}
+        return {"balance": "0", "currency": "CNY", "error": "API Key 格式错误"}
     try:
         resp = requests.get(
             "https://api.deepseek.com/user/balance",
@@ -337,14 +337,18 @@ async def get_balance(body: ApiKeyCheck):
         )
         if resp.status_code == 200:
             data = resp.json()
-            # Response: {"is_available": true, "balance_infos": [{"currency": "CNY", "total_balance": "...", "topped_up_balance": "...", "granted_balance": "..."}]}
+            # Response: {"is_available": true, "balance_infos": [{"currency": "CNY", "total_balance": "..."}]}
+            # currency can be "CNY" or "USD"; balance_infos may contain multiple entries
             infos = data.get("balance_infos", [])
             if infos:
-                total = infos[0].get("total_balance", "0")
-                return {"balance": total}
-        return {"balance": "0", "error": resp.text[:200]}
+                info = infos[0]
+                return {
+                    "balance": info.get("total_balance", "0"),
+                    "currency": info.get("currency", "CNY"),
+                }
+        return {"balance": "0", "currency": "CNY", "error": resp.text[:200]}
     except Exception as e:
-        return {"balance": "0", "error": str(e)}
+        return {"balance": "0", "currency": "CNY", "error": str(e)}
 
 
 @app.get("/api/languages")
