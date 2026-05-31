@@ -54,7 +54,7 @@ Read `rules/languages.json`, add a new entry:
   "name": "Display Name",
   "prompt_lang": "xx",
   "sentence_separators": ".!?",
-  "context_sentences": 3,
+  "context_sentences": 1,
   "context_prefix_prompt": "Context from preceding text…",
   "context_suffix_prompt": "Context from following text…",
   "proofread_instruction": "Please proofread the following text:",
@@ -81,7 +81,7 @@ Read `rules/languages.json`, add a new entry:
 | :--- | :--- | :--- |
 | `prompt_lang` | Language of the prompt text (for display) | `"ja"` |
 | `sentence_separators` | Characters that end a sentence | `"。！？"` |
-| `context_sentences` | Sentences to pass as cross-batch context (usually 3) | `3` |
+| `context_sentences` | Sentences to pass as cross-batch context (usually 1) | `1` |
 | `context_prefix_prompt` | Header text above prefix context | "上文参考…" |
 | `context_suffix_prompt` | Header text above suffix context | "下文参考…" |
 | `proofread_instruction` | Instruction before the annotated text | "请校对以下文本：" |

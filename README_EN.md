@@ -144,7 +144,7 @@ Use the `/add-language` command to automatically generate a rules file and regis
   "name": "日本語",                    // Display name
   "prompt_lang": "ja",                 // Prompt language code
   "sentence_separators": "。！？",      // Sentence boundary punctuation
-  "context_sentences": 2,              // Sentences to pass as cross-batch context
+  "context_sentences": 1,              // Sentences to pass as cross-batch context
   "context_prefix_prompt": "上文参考…", // Prefix context header
   "context_suffix_prompt": "下文参考…", // Suffix context header
   "proofread_instruction": "…",        // Main proofreading instruction

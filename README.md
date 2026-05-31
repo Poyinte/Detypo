@@ -144,7 +144,7 @@ chmod +x detypo
   "name": "日本語",                    // 显示名称
   "prompt_lang": "ja",                 // 提示词语种（zh/en/ja…）
   "sentence_separators": "。！？",      // 上下文断句标点
-  "context_sentences": 2,              // 跨页上下文传递句数
+  "context_sentences": 1,              // 跨页上下文传递句数
   "context_prefix_prompt": "上文参考…", // 上文提示模板
   "context_suffix_prompt": "下文参考…", // 下文提示模板
   "proofread_instruction": "…",        // 校对指令模板
