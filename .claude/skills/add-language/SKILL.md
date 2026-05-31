@@ -52,6 +52,12 @@ Read `rules/languages.json`, add a new entry:
 ```json
 "CODE": {
   "name": "Display Name",
+  "prompt_lang": "xx",
+  "sentence_separators": ".!?",
+  "context_sentences": 2,
+  "context_prefix_prompt": "Context from preceding text…",
+  "context_suffix_prompt": "Context from following text…",
+  "proofread_instruction": "Please proofread the following text:",
   "categories": {
     "Category1": "#D44545",
     "Category2": "#6E9ED4"
@@ -61,22 +67,46 @@ Read `rules/languages.json`, add a new entry:
 }
 ```
 
-The `system_prompt` template supports two placeholders:
-- `{rules}` — replaced with the rules file content at runtime
-- `{categories}` — replaced with the comma-joined category names
+### Required fields
+
+| Field | Description |
+| :--- | :--- |
+| `name` | Display name in the language itself |
+| `categories` | Error types → hex color (3–6 entries) |
+| `system_prompt` | Prompt template with `{rules}` and `{categories}` placeholders |
+
+### Context / prompt fields (all required for full functionality)
+
+| Field | Description | Example |
+| :--- | :--- | :--- |
+| `prompt_lang` | Language of the prompt text (for display) | `"ja"` |
+| `sentence_separators` | Characters that end a sentence | `"。！？"` |
+| `context_sentences` | Sentences to pass as cross-batch context (usually 2) | `2` |
+| `context_prefix_prompt` | Header text above prefix context | "上文参考…" |
+| `context_suffix_prompt` | Header text above suffix context | "下文参考…" |
+| `proofread_instruction` | Instruction before the annotated text | "请校对以下文本：" |
+
+These fields enable cross-batch context passing (reduces false positives at
+page boundaries) and keep `llm_client.py` language-agnostic — all prompt
+text is driven from the JSON config.
+
+Write all prompt fields in the language's native language.
+
+### System prompt requirements
+
+The `system_prompt` MUST:
+1. Tell the model it is a professional proofreader
+2. Instruct it to follow the rules below (`{rules}`)
+3. List allowed categories (`{categories}`)
+4. Remind it that `[#NNNN]` are positional identifiers — do NOT proofread the
+   IDs themselves, and do NOT report missing spaces between markers and
+   adjacent words (the markers are formatting artifacts)
+5. Require strict JSON output format: `{"errors": [...]}`
+6. State that each `[#NNNN]` appears at most once
 
 If `system_prompt` is omitted, the English fallback is used. If
 `false_reasons` is omitted, `["no error", "correct usage", "acceptable"]`
 is used.
-
-Write the system prompt in the language's native language if possible,
-otherwise in English. The prompt MUST:
-1. Tell the model it is a professional proofreader
-2. Instruct it to follow the rules below (`{rules}`)
-3. List allowed categories (`{categories}`)
-4. Remind it not to modify `[#NNNN]` positional identifiers
-5. Require strict JSON output format: `{"errors": [...]}`
-6. State that each `[#NNNN]` appears at most once
 
 ### Step 3: Verify
 
