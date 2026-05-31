@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { PageJump } from '@/components/page-jump'
-import { PdfUploadWizard } from '@/components/pdf-upload-wizard'
+import { PdfUploadWizard, type TokenOverhead } from '@/components/pdf-upload-wizard'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -138,6 +138,7 @@ export default function App() {
   const [filename, setFilename] = useState('')
   const [pageRange, setPageRange] = useState<[number, number] | null>(null)
   const [pageTokenCounts, setPageTokenCounts] = useState<number[]>([])
+  const [tokenOverhead, setTokenOverhead] = useState<TokenOverhead | undefined>()
   const [reuploadOpen, setReuploadOpen] = useState(false)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('deepseek_api_key') || '')
   const [setupOpen, setSetupOpen] = useState(false)
@@ -362,6 +363,7 @@ export default function App() {
       setFilename(f.name)
       setPageRange(null)
       setPageTokenCounts(d.page_token_counts || [])
+      if (d.overhead) setTokenOverhead(d.overhead)
       if (d.detected_lang) setProofLang(d.detected_lang)
       if (d.languages) setAvailableLangs(d.languages)
       pushLog('ready')
@@ -664,6 +666,7 @@ export default function App() {
               fileId={fileId || ''}
               filename={filename}
               pageTokenCounts={pageTokenCounts}
+              overhead={tokenOverhead}
               availableLangs={availableLangs}
               proofLang={proofLang}
               onSetProofLang={setProofLang}

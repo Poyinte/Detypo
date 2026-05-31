@@ -46,9 +46,16 @@ const PRICING = {
   usd: { inputMiss: 0.14, inputHit: 0.0028, output: 0.28, symbol: '$' },
 }
 
+export interface TokenOverhead {
+  sys: number       // system prompt tokens (real count from tokenizer)
+  per_page: number  // ID markers per page (estimate)
+  per_batch: number // instruction + context headers per batch (real count from tokenizer)
+}
+
 function estimateTokens(
   pageTokenCounts: number[], start: number, end: number,
   currency: 'CNY' | 'USD' = 'CNY',
+  overhead?: TokenOverhead,
 ): { tokens: number; cost: number } {
   const selected = pageTokenCounts.slice(start - 1, end)
   if (!selected.length) return { tokens: 0, cost: 0 }
@@ -71,13 +78,13 @@ function estimateTokens(
   const REPLY_RATIO = Math.max(0.35, Math.min(0.75, 0.2 + avgTokenPerSamplePage * 0.0006))
   const MIN_REPLY = 30
 
-  const SYS = 5200              // system prompt (padded for upper bound)
-  const ID = 350                // [#NNNN] markers + [PAGEN] prefix per page (upper bound)
-  const PREFIX = 15             // user instruction per batch
-  const CONTEXT = 150           // cross-batch context headers + separators per batch
+  // Use real tokenizer counts when available, fall back to estimates
+  const SYS = overhead?.sys ?? 5200
+  const PER_PAGE = overhead?.per_page ?? 350
+  const PER_BATCH = overhead?.per_batch ?? 165
 
   const perBatchText = avgTokenPerSamplePage * modePages
-  const perBatchInput = perBatchText + modePages * ID + PREFIX + CONTEXT + SYS
+  const perBatchInput = perBatchText + modePages * PER_PAGE + PER_BATCH + SYS
   const replyTokens = Math.max(MIN_REPLY, Math.round(perBatchInput * REPLY_RATIO))
   const perBatchTotal = perBatchInput + replyTokens
 
@@ -87,7 +94,7 @@ function estimateTokens(
   // Cost estimate: 70% cache hit for system prompt
   const p = PRICING[currency.toLowerCase() as 'cny' | 'usd']
   const sysPerBatch = SYS * (0.3 * p.inputMiss + 0.7 * p.inputHit)
-  const textPerBatch = (perBatchText + modePages * ID + PREFIX + CONTEXT) * p.inputMiss
+  const textPerBatch = (perBatchText + modePages * PER_PAGE + PER_BATCH) * p.inputMiss
   const outPerBatch = replyTokens * p.output
   const totalCost = numBatches * (sysPerBatch + textPerBatch + outPerBatch) / 1_000_000
 
@@ -99,6 +106,7 @@ interface PdfUploadWizardProps {
   fileId: string
   filename: string
   pageTokenCounts: number[]
+  overhead?: TokenOverhead
   availableLangs: Record<string, string>
   proofLang: string
   onSetProofLang: (lang: string) => void
@@ -108,7 +116,7 @@ interface PdfUploadWizardProps {
 }
 
 export function PdfUploadWizard({
-  pageCount, fileId, filename, pageTokenCounts,
+  pageCount, fileId, filename, pageTokenCounts, overhead,
   availableLangs, proofLang, onSetProofLang,
   onStart, onUpload, onClose,
 }: PdfUploadWizardProps) {
@@ -142,14 +150,14 @@ export function PdfUploadWizard({
     prevRangeRef.current = key
     clearTimeout(debounceRef.current)
     if (immediate) {
-      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency))
+      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency, overhead))
       return
     }
     debounceRef.current = setTimeout(() => {
-      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency))
+      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency, overhead))
     }, 400)
     return () => clearTimeout(debounceRef.current)
-  }, [rangeStart, rangeEnd, pageTokenCounts, currency])
+  }, [rangeStart, rangeEnd, pageTokenCounts, currency, overhead])
 
   const selectedPages = range[1] - range[0] + 1
 

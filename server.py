@@ -69,11 +69,30 @@ async def upload_pdf(file: UploadFile = File(...)):
         page_texts.append(engine.get_page_plain_text(p))
     engine.close()
 
-    from utils.token_counter import tokens_per_page
+    from utils.token_counter import tokens_per_page, count_tokens
     page_token_counts = tokens_per_page(page_texts)
     total_text_tokens = sum(page_token_counts)
 
     detected_lang = detect_language(page_texts)
+
+    # Count fixed per-batch overhead with the real tokenizer
+    profile = LANGUAGE_PROFILES.get(detected_lang, LANGUAGE_PROFILES.get("zh"))
+    # Build the fixed template parts (without dynamic context text or page text)
+    overhead_template = (
+        profile.context_prefix_prompt + "\n"
+        + "---\n"
+        + profile.proofread_instruction + "\n\n"
+        + "---\n"
+        + profile.context_suffix_prompt + "\n"
+    )
+    sys_tokens = count_tokens(profile.system_prompt)
+    batch_overhead_tokens = count_tokens(overhead_template)
+
+    overhead = {
+        "sys": sys_tokens,                          # system prompt (real count)
+        "per_page": 350,                             # ID markers per page (estimate)
+        "per_batch": batch_overhead_tokens,          # instruction + context headers per batch (real count)
+    }
 
     sessions[file_id] = {
         "path": file_path,
@@ -93,6 +112,7 @@ async def upload_pdf(file: UploadFile = File(...)):
         "total_text_tokens": total_text_tokens,
         "detected_lang": detected_lang,
         "languages": {code: p.name for code, p in LANGUAGE_PROFILES.items()},
+        "overhead": overhead,
     }
 
 
