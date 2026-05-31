@@ -131,10 +131,9 @@ export default function App() {
   }, [showElapsed])
 
   const [totalTokens, setTotalTokens] = useState(0)
-  const [proofCostCNY, setProofCostCNY] = useState(0)
-  const [proofCostUSD, setProofCostUSD] = useState(0)
-  const [balances, setBalances] = useState<Record<string, string>>({})
-  const balancesRef = useRef<Record<string, string>>({})
+  const [balance, setBalance] = useState('')
+  const balanceRef = useRef('')
+  const [proofCost, setProofCost] = useState(0)
   const [filename, setFilename] = useState('')
   const [pageRange, setPageRange] = useState<[number, number] | null>(null)
   const [pageTokenCounts, setPageTokenCounts] = useState<number[]>([])
@@ -174,22 +173,8 @@ export default function App() {
 
   // UI language
   const { t, uiLang } = useI18n()
-  const displayCurrency = uiLang === 'en' ? 'USD' : 'CNY'
-  const hasBalance = (cur: string) => !!balances[cur]
-
-  // Display balance: use API value if available, otherwise convert from available currency
-  const displayBalance = (() => {
-    if (hasBalance(displayCurrency)) return parseFloat(balances[displayCurrency])
-    const cny = parseFloat(balances['CNY'] || '0')
-    return displayCurrency === 'USD' ? cny * 0.14 : cny
-  })()
-
-  // Display cost: use matching-currency delta if API provided it, else convert
-  const displayCost = (() => {
-    if (displayCurrency === 'USD' && proofCostUSD > 0) return proofCostUSD
-    if (displayCurrency === 'CNY') return proofCostCNY
-    return proofCostCNY * 0.14  // USD requested but API only has CNY
-  })()
+  // Balance/cost are always CNY (DeepSeek billing currency); convert for English UI
+  const toDisplay = (cny: number) => uiLang === 'en' ? cny * 0.14 : cny
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -261,7 +246,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ api_key: apiKey }),
     }).then(r => r.json()).then(d => {
-      if (d.balances) setBalances(d.balances)
+      if (d.balance) setBalance(d.balance)
     }).catch(() => {})
   }, []) // eslint-disable-line
 
@@ -331,14 +316,11 @@ export default function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey }),
           }).then(r => r.json()).then(d => {
-            const newBalances: Record<string, string> = d.balances || {}
-            const beforeCNY = parseFloat(balancesRef.current['CNY'] || '0')
-            const afterCNY = parseFloat(newBalances['CNY'] || '0')
-            const beforeUSD = parseFloat(balancesRef.current['USD'] || '0')
-            const afterUSD = parseFloat(newBalances['USD'] || '0')
-            if (d.balances) setBalances(d.balances)
-            setProofCostCNY(Math.max(0, beforeCNY - afterCNY))
-            setProofCostUSD(Math.max(0, beforeUSD - afterUSD))
+            const after = parseFloat(d.balance || '0')
+            const before = parseFloat(balanceRef.current || '0')
+            const cost = Math.max(0, before - after)
+            setBalance(d.balance || '')
+            setProofCost(cost)
             if (attempt < 6) {
               const delays = [5, 10, 20, 40, 70, 155]
               setTimeout(() => checkBalance(attempt + 1), delays[attempt] * 1000)
@@ -400,7 +382,7 @@ export default function App() {
     abortRef.current?.abort()
     abortRef.current = null
     setErrors([]); setExcludedIds(new Set()); setCurrentPage(1)
-    setTotalTokens(0); setCacheHitTokens(0); setProofCostCNY(0); setProofCostUSD(0); setShowElapsed(true)
+    setTotalTokens(0); setCacheHitTokens(0); setProofCost(0); setShowElapsed(true)
     setModelName('')
     setShowProgress(true); setProgressPct(0); setDisconnected(false)
     setLogLines([])
@@ -418,8 +400,7 @@ export default function App() {
         body: JSON.stringify({ api_key: apiKey }),
       })
       const balData = await balResp.json()
-      balancesRef.current = balData.balances || {}
-      if (balData.balances) setBalances(balData.balances)
+      balanceRef.current = balData.balance || '0'
     } catch { /* balance fetch is best-effort */ }
     errCountRef.current = 0
     startTimer()
@@ -499,7 +480,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: key }),
         }).then(r => r.json()).then(d => {
-          if (d.balances) setBalances(d.balances)
+          if (d.balance) setBalance(d.balance)
         }).catch(() => {})
       } else { setKeyStatus('fail') }
     } catch { setKeyStatus('error') }
@@ -926,18 +907,18 @@ export default function App() {
                 <span>{t('status.tokens', { tokens: fmtTokens(totalTokens) })}</span>
                 <Separator orientation="vertical" className="h-3" />
                 <span>{t('status.cache_hit', { tokens: fmtTokens(cacheHitTokens), pct: totalTokens > 0 ? Math.round(cacheHitTokens / totalTokens * 100) : 0 })}</span>
-                {!showElapsed && displayCost > 0 && (
+                {!showElapsed && proofCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
-                    <span>{t('status.cost', { cost: displayCost.toFixed(2) })}</span>
+                    <span>{t('status.cost', { cost: toDisplay(proofCost).toFixed(2) })}</span>
                   </>
                 )}
               </>
             )}
-            {displayBalance > 0 && (
+            {balance && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>{t('status.balance', { balance: displayBalance.toFixed(2) })}</span>
+                <span>{t('status.balance', { balance: toDisplay(parseFloat(balance)).toFixed(2) })}</span>
               </>
             )}
           </div>
