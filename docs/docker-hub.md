@@ -7,17 +7,10 @@ Made with FastAPI, React 19, and shadcn/ui.
 ## Key Capabilities
 
 - **Fast Proofreading** — Uses `deepseek-v4-flash` for quick and accurate error detection
-- **Cross-Batch Context** — Passes adjacent-page context during proofreading, reducing false positives at page boundaries
-- **Review and Filter** — Browse findings in a filterable table or card layout, toggle individual corrections on/off before exporting
+- **Review and Filter** — Browse findings after proofreading, accept or reject individual items
 - **Traceable Annotations** — Exported PDFs include detailed, locatable annotations for easy verification
-- **Bilingual Support** — Auto-detects document language and applies the correct rule set: Chinese (6 error categories) or English (4 categories based on Chicago Manual of Style, 18th ed.)
-- **Extensible** — Add new languages by editing `languages.json` — configure categories, prompts, sentence separators, and context settings without touching Python code. CLI command `/add-language` automates the setup.
-- **Cost Preview** — Token estimation and cost breakdown before starting each proofread
-- **SSE Streaming** — Real-time progress updates during LLM processing
-- **UI Language** — Switch between Chinese and English interface from the sidebar
-- **Dark Mode** — Light / dark / system-follow themes
-- **Auto Port** — Server auto-selects an available port on startup
-- **Self-Hosted** — Runs entirely on your machine with your own DeepSeek API key
+- **Bilingual Support** — Auto-detects document language and switches to the corresponding rule set
+- **Extensible** — Add new languages on your own
 
 ## Start Detypo in Docker
 
