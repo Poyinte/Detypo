@@ -175,11 +175,21 @@ export default function App() {
   // UI language
   const { t, uiLang } = useI18n()
   const displayCurrency = uiLang === 'en' ? 'USD' : 'CNY'
-  // Display balance: pick the matching currency from API response
-  const displayBalance = balances[displayCurrency] || balances['CNY'] || '0'
-  // Cost computed from actual balance deltas per currency — no manual conversion
-  const displayCost = displayCurrency === 'USD' && proofCostUSD > 0
-    ? proofCostUSD : proofCostCNY
+  const hasBalance = (cur: string) => !!balances[cur]
+
+  // Display balance: use API value if available, otherwise convert from available currency
+  const displayBalance = (() => {
+    if (hasBalance(displayCurrency)) return parseFloat(balances[displayCurrency])
+    const cny = parseFloat(balances['CNY'] || '0')
+    return displayCurrency === 'USD' ? cny * 0.14 : cny
+  })()
+
+  // Display cost: use matching-currency delta if API provided it, else convert
+  const displayCost = (() => {
+    if (displayCurrency === 'USD' && proofCostUSD > 0) return proofCostUSD
+    if (displayCurrency === 'CNY') return proofCostCNY
+    return proofCostCNY * 0.14  // USD requested but API only has CNY
+  })()
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -924,10 +934,10 @@ export default function App() {
                 )}
               </>
             )}
-            {displayBalance && parseFloat(displayBalance) > 0 && (
+            {displayBalance > 0 && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>{t('status.balance', { balance: parseFloat(displayBalance).toFixed(2) })}</span>
+                <span>{t('status.balance', { balance: displayBalance.toFixed(2) })}</span>
               </>
             )}
           </div>
