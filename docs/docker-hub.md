@@ -6,16 +6,17 @@ Made with FastAPI, React 19, and shadcn/ui.
 
 ## Key Capabilities
 
-- **Bilingual Proofreading** — Auto-detects document language and applies the correct rule set: Chinese (6 error categories) or English (4 categories based on Chicago Manual of Style, 18th ed.)
-- **Cross-Batch Context** — Proofreading passes context from adjacent pages, reducing false positives at page boundaries
+- **Fast Proofreading** — Uses `deepseek-v4-flash` for quick and accurate error detection
+- **Cross-Batch Context** — Passes adjacent-page context during proofreading, reducing false positives at page boundaries
+- **Review and Filter** — Browse findings in a filterable table or card layout, toggle individual corrections on/off before exporting
+- **Traceable Annotations** — Exported PDFs include detailed, locatable annotations for easy verification
+- **Bilingual Support** — Auto-detects document language and applies the correct rule set: Chinese (6 error categories) or English (4 categories based on Chicago Manual of Style, 18th ed.)
 - **Extensible** — Add new languages by editing `languages.json` — configure categories, prompts, sentence separators, and context settings without touching Python code. CLI command `/add-language` automates the setup.
-- **Dual View** — Review findings in a filterable table or card layout with page-by-page navigation
-- **Selective Export** — Toggle individual corrections on/off before exporting the annotated PDF
 - **Cost Preview** — Token estimation and cost breakdown before starting each proofread
 - **SSE Streaming** — Real-time progress updates during LLM processing
 - **UI Language** — Switch between Chinese and English interface from the sidebar
 - **Dark Mode** — Light / dark / system-follow themes
-- **Auto Port** — Server auto-selects an available port on startup; the launcher finds and passes it to the server
+- **Auto Port** — Server auto-selects an available port on startup
 - **Self-Hosted** — Runs entirely on your machine with your own DeepSeek API key
 
 ## Start Detypo in Docker
