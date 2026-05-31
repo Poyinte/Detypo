@@ -3,9 +3,12 @@
 # detypo — Detypo PDF Proofreader one-click launcher
 # =============================================================================
 # Usage:
-#   ./detypo              Prod mode (build, serve at :8520) [default]
+#   ./detypo              Prod mode (build, serve at auto-detected port)
 #   ./detypo dev           Dev mode (hot-reload, opens :5173)
 #   ./detypo stop          Stop all services
+#
+# Port: auto-detected (scans upward from 8520). The actual port is shown
+# in the banner and written to .detypo-port.
 #
 # Requires: Python 3.10+, Node.js 18+
 # =============================================================================
@@ -16,9 +19,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-BACKEND_PORT=8520
-FRONTEND_PORT=5173
+PORT_FILE="$SCRIPT_DIR/.detypo-port"
+PID_DIR="${TMPDIR:-/tmp}/detypo-pids"
 FRONTEND_DIR="frontend"
+mkdir -p "$PID_DIR"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -43,6 +47,32 @@ if [ -z "$PYTHON" ]; then
     err "Python not found. Please install Python 3.10+"
     exit 1
 fi
+
+# ── Find an available port (scan range, fallback to OS-assigned) ──
+find_port() {
+    local start=${1:-8520} count=${2:-50}
+    $PYTHON -c "
+import socket
+for p in range($start, $start + $count):
+    try:
+        s = socket.socket()
+        s.bind(('127.0.0.1', p))
+        s.close()
+        print(p)
+        break
+    except OSError:
+        continue
+else:
+    s = socket.socket()
+    s.bind(('127.0.0.1', 0))
+    print(s.getsockname()[1])
+    s.close()
+"
+}
+
+# ── Detect ports ──
+BACKEND_PORT=$(find_port 8520 50)
+FRONTEND_PORT=$(find_port 5173 10)
 
 # ── Kill port (Windows + Unix) ──
 kill_port() {
@@ -108,10 +138,20 @@ ensure_deps() {
 
 # ── Cleanup ──
 cleanup() {
-    kill_port $BACKEND_PORT
-    kill_port $FRONTEND_PORT
-    taskkill //F //IM python.exe >/dev/null 2>&1 || true
-    taskkill //F //IM node.exe >/dev/null 2>&1 || true
+    # Read port file if it exists
+    if [ -f "$PORT_FILE" ]; then
+        local saved_port
+        saved_port=$(cat "$PORT_FILE" 2>/dev/null || true)
+        if [ -n "$saved_port" ]; then
+            kill_port "$saved_port"
+        fi
+        rm -f "$PORT_FILE"
+    fi
+    # Fallback: kill on default ports
+    kill_port 8520
+    kill_port 5173
+    # Clean PID files
+    rm -f "$PID_DIR"/*.pid
 }
 
 # ── stop ──
@@ -125,8 +165,6 @@ do_stop() {
 do_prod() {
     info "Detypo - Prod Mode"
     ensure_deps
-    cleanup 2>/dev/null
-    sleep 0.5
 
     info "Building frontend..."
     (cd "$FRONTEND_DIR" && npm run build) || { err "Frontend build failed"; exit 1; }
@@ -142,7 +180,7 @@ do_prod() {
     open_browser "http://127.0.0.1:${BACKEND_PORT}"
 
     export DETYPO_PROD=1
-    "$PYTHON" server.py
+    "$PYTHON" server.py --port "$BACKEND_PORT"
     echo ""
     info "Server stopped. Cleaning up..."
     cleanup
@@ -153,17 +191,15 @@ do_prod() {
 do_dev() {
     info "Detypo - Dev Mode"
     ensure_deps
-    cleanup 2>/dev/null
-    sleep 0.5
 
     info "Starting backend (127.0.0.1:${BACKEND_PORT})..."
-    "$PYTHON" server.py > /tmp/detypo-backend.log 2>&1 &
-    echo $! > /tmp/detypo-port-${BACKEND_PORT}.pid
+    "$PYTHON" server.py --port "$BACKEND_PORT" > /tmp/detypo-backend.log 2>&1 &
+    echo $! > "$PID_DIR/backend.pid"
     wait_for "http://127.0.0.1:${BACKEND_PORT}" "Backend" 20
 
     info "Starting frontend (127.0.0.1:${FRONTEND_PORT})..."
-    (cd "$FRONTEND_DIR" && npm run dev > /tmp/detypo-frontend.log 2>&1) &
-    echo $! > /tmp/detypo-port-${FRONTEND_PORT}.pid
+    (cd "$FRONTEND_DIR" && npm run dev -- --port "$FRONTEND_PORT" > /tmp/detypo-frontend.log 2>&1) &
+    echo $! > "$PID_DIR/frontend.pid"
     wait_for "http://127.0.0.1:${FRONTEND_PORT}" "Frontend" 20
 
     echo ""
@@ -183,7 +219,7 @@ case "${1:-prod}" in
     stop) do_stop ;;
     *)
         echo "Usage: ./detypo {prod|dev|stop}"
-        echo "  prod  Prod mode (default) — build and serve at :8520"
+        echo "  prod  Prod mode (default) — build and serve at auto-detected port"
         echo "  dev   Dev mode — hot-reload, opens :5173"
         echo "  stop  Stop all services"
         exit 1

@@ -396,6 +396,7 @@ async def serve_frontend(full_path: str):
 
 
 if __name__ == "__main__":
+    import sys
     import socket
     import uvicorn, subprocess, platform
 
@@ -407,26 +408,62 @@ if __name__ == "__main__":
         except OSError:
             return False
 
-    # Find first available port starting from the configured default
-    active_port = PORT
-    for offset in range(10):
-        if _port_available(HOST, active_port):
-            break
-        print(f"[startup] Port {active_port} unavailable, trying next...")
-        active_port = PORT + offset + 1
-    else:
-        print(f"[startup] ERROR: No available port in range {PORT}-{PORT + 10}")
-        exit(1)
+    def _find_available_port(host: str, start: int, count: int = 50) -> int | None:
+        """Scan for an available port starting from `start`, up to `count` attempts."""
+        for port in range(start, start + count):
+            if _port_available(host, port):
+                return port
+        return None
 
-    if platform.system() == "Windows" and not _port_available(HOST, active_port):
-        # If the port we picked is occupied (stale process), kill it and reclaim
-        out = subprocess.check_output(["netstat", "-ano"], text=True)
-        for line in out.splitlines():
-            if f"{HOST}:{active_port}" in line and "LISTENING" in line:
-                pid = line.strip().split()[-1]
-                subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True)
-                print(f"[startup] Killed old process PID {pid} on port {active_port}")
-                break
+    # ── Resolve port ──
+    # Priority: --port CLI arg > DETYPO_PORT env var > PORT env var > auto-detect
+    active_port = None
+    cli_port = None
+
+    # Parse --port from command line (simple, no argparse needed)
+    for i, arg in enumerate(sys.argv[1:], start=1):
+        if arg == "--port" and i < len(sys.argv) - 1:
+            cli_port = int(sys.argv[i + 1])
+            break
+        if arg.startswith("--port="):
+            cli_port = int(arg.split("=", 1)[1])
+            break
+
+    if cli_port is not None:
+        # Explicit port requested — use it directly
+        if _port_available(HOST, cli_port):
+            active_port = cli_port
+        else:
+            # Port is taken — try to reclaim on Windows
+            if platform.system() == "Windows":
+                out = subprocess.check_output(["netstat", "-ano"], text=True)
+                for line in out.splitlines():
+                    if f"{HOST}:{cli_port}" in line and "LISTENING" in line:
+                        pid = line.strip().split()[-1]
+                        subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True)
+                        print(f"[startup] Killed old process PID {pid} on port {cli_port}")
+                        break
+                import time
+                time.sleep(0.5)
+                if _port_available(HOST, cli_port):
+                    active_port = cli_port
+            if active_port is None:
+                print(f"[startup] ERROR: Requested port {cli_port} is in use and could not be freed")
+                exit(1)
+    else:
+        # Auto-detect: try configured PORT first, then scan upward
+        active_port = _find_available_port(HOST, PORT)
+        if active_port is None:
+            print(f"[startup] ERROR: No available port in range {PORT}-{PORT + 50}")
+            exit(1)
+        if active_port != PORT:
+            print(f"[startup] Port {PORT} unavailable, auto-selected port {active_port}")
+
+    # ── Write port file for launcher scripts ──
+    port_file = Path(__file__).parent / ".detypo-port"
+    port_file.write_text(str(active_port))
+
+    # ── Start server ──
     # Disable ANSI color codes in uvicorn logs (CMD terminal compatibility)
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["formatters"]["default"]["use_colors"] = False

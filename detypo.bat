@@ -6,18 +6,21 @@ setlocal enabledelayedexpansion
 :: detypo.bat - Detypo PDF Proofreader one-click launcher (Windows)
 :: =============================================================================
 :: Usage:
-::   detypo.bat             Prod mode (build, serve at :8520) [default]
-::   detypo.bat dev          Dev mode (hot-reload, opens :5173)
-::   detypo.bat stop         Stop all services (dev mode)
+::   detypo.bat             Prod mode (build, serve at auto-detected port)
+::   detypo.bat dev          Dev mode (hot-reload, opens on auto-detected ports)
+::   detypo.bat stop         Stop all services
 ::
 :: Prod mode: server runs in this window. Ctrl+C or close window to stop.
 :: Dev mode:  services run in background. Use detypo.bat stop to stop.
 ::
+:: Ports are auto-detected (OS-assigned). The actual ports are shown in the
+:: banner. The backend writes .detypo-port so cleanup knows which port to kill.
+::
 :: Requires: Python 3.10+, Node.js 18+
 :: =============================================================================
 
-set BACKEND_PORT=8520
-set FRONTEND_PORT=5173
+set "PORT_FILE=%~dp0.detypo-port"
+set "TMP_PY=%TEMP%\detypo_find_port.py"
 
 :: ---- Find Python ----
 set PYTHON=
@@ -36,6 +39,19 @@ pause
 exit /b 1
 :python_found
 
+:: ---- Write a tiny Python script to find an available port ----
+:: Uses individual echo lines instead of a block to avoid () escaping issues.
+echo import socket > "%TMP_PY%"
+echo s = socket.socket() >> "%TMP_PY%"
+echo s.bind(("127.0.0.1", 0)) >> "%TMP_PY%"
+echo print(s.getsockname()[1]) >> "%TMP_PY%"
+echo s.close() >> "%TMP_PY%"
+
+:: ---- Find available ports ----
+for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%"`) do set "BACKEND_PORT=%%p"
+for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%"`) do set "FRONTEND_PORT=%%p"
+del "%TMP_PY%" >nul 2>&1
+
 :: ---- Check Node ----
 where node >nul 2>nul
 if %errorlevel% neq 0 (
@@ -45,9 +61,10 @@ if %errorlevel% neq 0 (
 )
 
 :: ---- Dispatch ----
-if /i "%~1"=="stop"  goto :do_stop
-if /i "%~1"=="dev"   goto :do_dev
+if /i "%~1"=="stop" goto :do_stop
+if /i "%~1"=="dev"  goto :do_dev
 goto :do_prod
+
 
 :: ======================== PROD MODE (default) ========================
 :do_prod
@@ -90,27 +107,20 @@ if %errorlevel% neq 0 (
 )
 echo [detypo] Frontend build done
 
-:: Kill existing process on port 8520
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8520 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-timeout /t 1 /nobreak >nul
-
 echo.
 echo ======================================
-echo   Detypo is running (prod)
-echo   URL:  http://127.0.0.1:8520
+echo   Detypo is running (prod^)
+echo   URL:  http://127.0.0.1:%BACKEND_PORT%
 echo   Stop: Ctrl+C or close this window
 echo ======================================
 echo.
-start "" "http://127.0.0.1:8520"
+start "" "http://127.0.0.1:%BACKEND_PORT%"
 
 set DETYPO_PROD=1
-%PYTHON% server.py
+%PYTHON% server.py --port %BACKEND_PORT%
 echo.
 echo [detypo] Server stopped. Cleaning up...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8520 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-taskkill /F /IM python.exe >nul 2>&1
-taskkill /F /IM node.exe >nul 2>&1
+del "%PORT_FILE%" >nul 2>&1
 echo [detypo] Done
 pause
 goto :eof
@@ -147,14 +157,9 @@ if not exist "frontend\node_modules\" (
     echo [detypo] Frontend deps ready
 )
 
-:: Kill ports
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8520 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-timeout /t 1 /nobreak >nul
-
 :: Start backend
-echo [detypo] Starting backend (127.0.0.1:8520)...
-start "DetypoBackend" /B cmd /c "%PYTHON% server.py > %TEMP%\detypo-backend-%RANDOM%.log 2>&1"
+echo [detypo] Starting backend (127.0.0.1:%BACKEND_PORT%^)...
+start "DetypoBackend" /B cmd /c "%PYTHON% server.py --port %BACKEND_PORT% > %TEMP%\detypo-backend.log 2>&1"
 
 :: Wait for backend
 echo [detypo] Waiting for backend...
@@ -162,7 +167,7 @@ set /a _tries=0
 :dev_wait_backend
 set /a _tries+=1
 if %_tries% gtr 30 goto :dev_backend_timeout
-curl -s -o nul http://127.0.0.1:8520 2>nul
+curl -s -o nul http://127.0.0.1:%BACKEND_PORT% 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
     goto :dev_wait_backend
@@ -174,8 +179,8 @@ echo [detypo] WARNING: Backend may not be ready
 echo [detypo] Backend ready
 
 :: Start frontend
-echo [detypo] Starting frontend (127.0.0.1:5173)...
-start "DetypoFrontend" /B cmd /c "cd /d %CD%\frontend && npm run dev > %TEMP%\detypo-frontend.log 2>&1"
+echo [detypo] Starting frontend (127.0.0.1:%FRONTEND_PORT%^)...
+start "DetypoFrontend" /B cmd /c "cd /d %CD%\frontend && npm run dev -- --port %FRONTEND_PORT% > %TEMP%\detypo-frontend.log 2>&1"
 
 :: Wait for frontend
 echo [detypo] Waiting for frontend...
@@ -183,7 +188,7 @@ set /a _tries=0
 :dev_wait_frontend
 set /a _tries+=1
 if %_tries% gtr 30 goto :dev_frontend_timeout
-curl -s -o nul http://127.0.0.1:5173 2>nul
+curl -s -o nul http://127.0.0.1:%FRONTEND_PORT% 2>nul
 if %errorlevel% neq 0 (
     timeout /t 1 /nobreak >nul
     goto :dev_wait_frontend
@@ -196,21 +201,33 @@ echo [detypo] Frontend ready
 
 echo.
 echo ======================================
-echo   Detypo is running (dev)
-echo   URL:  http://127.0.0.1:5173
+echo   Detypo is running (dev^)
+echo   URL:  http://127.0.0.1:%FRONTEND_PORT%
 echo   Stop: detypo.bat stop
 echo ======================================
 echo.
-start "" "http://127.0.0.1:5173"
+start "" "http://127.0.0.1:%FRONTEND_PORT%"
 goto :eof
 
 
 :: ======================== STOP ========================
 :do_stop
 echo [detypo] Stopping services...
+
+:: Read port file to clean up the actual backend port
+if exist "%PORT_FILE%" (
+    set /p _active_port=<"%PORT_FILE%"
+    for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":!_active_port! " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+    del "%PORT_FILE%" >nul 2>&1
+)
+
+:: Kill by window title (dev mode processes)
+taskkill /FI "WINDOWTITLE eq DetypoBackend*" /F /T >nul 2>&1
+taskkill /FI "WINDOWTITLE eq DetypoFrontend*" /F /T >nul 2>&1
+
+:: Fallback: kill anything on default ports
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8520 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
-taskkill /F /IM python.exe >nul 2>&1
-taskkill /F /IM node.exe >nul 2>&1
+
 echo [detypo] Stopped
 goto :eof
