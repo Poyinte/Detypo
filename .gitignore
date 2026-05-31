@@ -5,6 +5,7 @@ uploads/
 *.pdf
 .env
 .detypo-port
+.detypo-key
 .venv/
 frontend/node_modules/
 frontend/dist/

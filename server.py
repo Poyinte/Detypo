@@ -334,6 +334,21 @@ async def get_session(file_id: str):
     }
 
 
+KEY_FILE = Path(__file__).parent / ".detypo-key"
+
+@app.get("/api/settings/key")
+async def get_api_key():
+    """Return the saved API key (from server-side file), so it survives port changes."""
+    try:
+        if KEY_FILE.exists():
+            key = KEY_FILE.read_text().strip()
+            if key.startswith("sk-"):
+                return {"api_key": key}
+    except Exception:
+        pass
+    return {"api_key": ""}
+
+
 @app.post("/api/settings/key")
 async def check_api_key(body: ApiKeyCheck):
     key = body.api_key.strip()
@@ -351,6 +366,11 @@ async def check_api_key(body: ApiKeyCheck):
             timeout=10,
         )
         if resp.status_code == 200:
+            # Save valid key server-side so it survives port/restart changes
+            try:
+                KEY_FILE.write_text(key)
+            except Exception:
+                pass
             return {"valid": True, "message": "API Key 验证成功"}
         else:
             try:

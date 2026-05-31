@@ -141,11 +141,19 @@ export default function App() {
   const [reuploadOpen, setReuploadOpen] = useState(false)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('deepseek_api_key') || '')
   const [setupOpen, setSetupOpen] = useState(false)
+  // On mount, fall back to server-saved key if localStorage is empty (survives port changes)
   useEffect(() => {
-    if (!localStorage.getItem('deepseek_api_key')) {
-      const t = setTimeout(() => setSetupOpen(true), 500)
-      return () => clearTimeout(t)
-    }
+    if (localStorage.getItem('deepseek_api_key')) return
+    fetch(`${API}/api/settings/key`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.api_key) { setApiKey(d.api_key); localStorage.setItem('deepseek_api_key', d.api_key) }
+        else { const t = setTimeout(() => setSetupOpen(true), 500); return () => clearTimeout(t) }
+      })
+      .catch(() => {
+        const t = setTimeout(() => setSetupOpen(true), 500)
+        return () => clearTimeout(t)
+      })
   }, [])
   useEffect(() => {
     if (!errors.length) return
