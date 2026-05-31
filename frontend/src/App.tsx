@@ -402,7 +402,7 @@ export default function App() {
     errCountRef.current = 0
     startTimer()
     try {
-      const url = new URL(`${API}/api/proofread/${fileId}`)
+      const url = new URL(`${API}/api/proofread/${fileId}`, window.location.origin)
       url.searchParams.set('token', apiKey)
       url.searchParams.set('lang', proofLang)
       if (range) {
