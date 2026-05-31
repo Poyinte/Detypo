@@ -26,6 +26,7 @@
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 基本功能
 
 - **快速校对** — 调用 `deepseek-v4-flash` 进行校对，快速发现错误
+- **跨页上下文** — 校对时自动传递跨页上下文，减少因跨页断句导致的误报
 - **错误整理** — 校对完成后，可对错误条目进行整理
 - **便于核查** — 导出的 PDF 文件带有可定位的详细注释，便于核查
 - **中英双语** — 自动检测文档语种，切换对应规则库进行校对
@@ -142,12 +143,18 @@ chmod +x detypo
 ```jsonc
 "ja": {
   "name": "日本語",                    // 显示名称
-  "categories": {                     // 错误分类 : hex 颜色
+  "prompt_lang": "ja",                 // 提示词语种（zh/en/ja…）
+  "sentence_separators": "。！？",      // 上下文断句标点
+  "context_sentences": 2,              // 跨页上下文传递句数
+  "context_prefix_prompt": "上文参考…", // 上文提示模板
+  "context_suffix_prompt": "下文参考…", // 下文提示模板
+  "proofread_instruction": "…",        // 校对指令模板
+  "categories": {                      // 错误分类 : hex 颜色
     "表記": "#D44545",                
     "文法": "#6E9ED4",                
     "数字": "#D4A86E"                 
   },
-  "system_prompt": "…{rules}…{categories}…",  // 提示词模板，{rules} 和 {categories} 在运行时替换（必填）
+  "system_prompt": "…{rules}…{categories}…",  // 提示词模板（必填）
   "false_reasons": ["誤りなし", "正しい"]       // 误报过滤关键词（可选）
 }
 ```

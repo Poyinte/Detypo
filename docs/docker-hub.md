@@ -7,13 +7,15 @@ Made with FastAPI, React 19, and shadcn/ui.
 ## Key Capabilities
 
 - **Bilingual Proofreading** — Auto-detects document language and applies the correct rule set: Chinese (6 error categories) or English (4 categories based on Chicago Manual of Style, 18th ed.)
-- **Extensible** — Add new languages by dropping in a rules file and registering it in `languages.json` — no code changes needed. CLI command `/add-language` automates the setup.
+- **Cross-Batch Context** — Proofreading passes context from adjacent pages, reducing false positives at page boundaries
+- **Extensible** — Add new languages by editing `languages.json` — configure categories, prompts, sentence separators, and context settings without touching Python code. CLI command `/add-language` automates the setup.
 - **Dual View** — Review findings in a filterable table or card layout with page-by-page navigation
 - **Selective Export** — Toggle individual corrections on/off before exporting the annotated PDF
 - **Cost Preview** — Token estimation and cost breakdown before starting each proofread
 - **SSE Streaming** — Real-time progress updates during LLM processing
 - **UI Language** — Switch between Chinese and English interface from the sidebar
 - **Dark Mode** — Light / dark / system-follow themes
+- **Auto Port** — Server auto-selects an available port on startup; the launcher finds and passes it to the server
 - **Self-Hosted** — Runs entirely on your machine with your own DeepSeek API key
 
 ## Start Detypo in Docker
@@ -22,7 +24,9 @@ Made with FastAPI, React 19, and shadcn/ui.
 docker run -p 8520:8520 poyinte/detypo
 ```
 
-Then open http://localhost:8520 and enter your DeepSeek API key in the setup dialog.
+> The server auto-selects an available port on startup if the default is occupied. For Docker, map the container port to match — use `-p 8520:8520` (or check startup log for the active port).
+
+Then open the printed URL (default `http://localhost:8520`) and enter your DeepSeek API key in the setup dialog.
 
 With a pre-configured API key:
 
@@ -35,8 +39,16 @@ docker run -p 8520:8520 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 | Variable | Description | Default |
 | :--- | :--- | :--- |
 | `DEEPSEEK_API_KEY` | DeepSeek API key (can also be set in-app) | *(none)* |
-| `HOST` | Server bind address | `0.0.0.0` |
-| `PORT` | Server port | `8520` |
+| `HOST` | Server bind address | `0.0.0.0` (Docker) / `127.0.0.1` (local) |
+| `PORT` | Preferred server port (auto-detects next available if busy) | `8520` |
+
+## Changing the Port
+
+To run on a different port, set the `PORT` environment variable and update the port mapping:
+
+```bash
+docker run -p 8080:8080 -e PORT=8080 poyinte/detypo
+```
 
 ## Using Your Own API Key
 
