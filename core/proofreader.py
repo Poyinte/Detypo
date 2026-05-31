@@ -1,4 +1,5 @@
 """校对编排器 — 串联 文本提取→ID注入→LLM校对→坐标反查→高亮标注 全流程"""
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.pdf_engine import PdfEngine
 from core.text_annotator import TextAnnotator
@@ -54,9 +55,60 @@ class Proofreader:
             yield {"event": "complete", "data": {"total_errors": 0, "errors": []}}
             return
 
+        # ── Phase 1.5: Extract cross-batch context ──
+        def _strip_ids(text: str) -> str:
+            """Remove [#NNNN] span IDs and [PAGEN] markers, keeping plain text."""
+            text = re.sub(r'\[#\d{4}\]', '', text)    # [#0001]
+            text = re.sub(r'\[PAGE\d+\]', '', text)   # [PAGE1]
+            return text.strip()
+
+        def _split_sentences(text: str, separators: str) -> list[str]:
+            """Split text into sentences at separator characters.
+            Separator stays attached to its preceding sentence."""
+            esc = re.escape(separators)
+            parts = re.split(f'(?<=[{esc}])', text)
+            return [p.strip() for p in parts if p.strip()]
+
+        def _extract_context(text: str, direction: str, separators: str, count: int) -> str:
+            """Extract first/last N sentences of plain text for cross-batch context."""
+            plain = _strip_ids(text)
+            if not plain:
+                return ""
+            sentences = _split_sentences(plain, separators)
+            if not sentences:
+                return ""
+            if direction == "suffix":
+                return "".join(sentences[:count])
+            else:  # prefix
+                n = min(count, len(sentences))
+                return "".join(sentences[-n:]) if n > 0 else ""
+
+        sep = self._profile.sentence_separators
+        ctx_n = self._profile.context_sentences
+        # Build context-aware batch tuples: (text, range, pages, prefix, suffix)
+        ctx_batches: list[tuple[str, range, list[int], str, str]] = []
+        for idx, (annotated_text, batch_range, page_nums) in enumerate(batches):
+            prefix = ""
+            suffix = ""
+            if len(batches) > 1:
+                if idx > 0:
+                    prefix = _extract_context(
+                        batches[idx - 1][0], "prefix", sep, ctx_n
+                    )
+                if idx < len(batches) - 1:
+                    suffix = _extract_context(
+                        batches[idx + 1][0], "suffix", sep, ctx_n
+                    )
+            ctx_batches.append((annotated_text, batch_range, page_nums, prefix, suffix))
+
         # ── Phase 2: Parallel LLM calls ──
-        def process_batch(annotated_text: str, batch_range: range, page_nums: list[int]):
-            llm_errors, usage = self._llm.proofread(annotated_text, self._profile)
+        def process_batch(annotated_text: str, batch_range: range, page_nums: list[int],
+                          prefix: str = "", suffix: str = ""):
+            llm_errors, usage = self._llm.proofread(
+                annotated_text, self._profile,
+                prefix_context=prefix or None,
+                suffix_context=suffix or None,
+            )
             cache_hit = usage.get("prompt_cache_hit_tokens") or usage.get("prompt_tokens_details", {}).get("cached_tokens") or 0
             cache_miss = usage.get("prompt_cache_miss_tokens") or 0
             total = usage.get("total_tokens", 0)
@@ -84,11 +136,11 @@ class Proofreader:
 
         if total_batches <= 2 or max_workers <= 1:
             # Too few batches to benefit from caching + parallelism: run sequentially
-            for idx, (text, br, pn) in enumerate(batches):
+            for idx, (text, br, pn, prefix, suffix) in enumerate(ctx_batches):
                 if self._stop_flag:
                     yield {"event": "stopped", "data": {"message": "校对已停止"}}
                     return
-                result = process_batch(text, br, pn)
+                result = process_batch(text, br, pn, prefix, suffix)
                 results.append(result)
                 yield {
                     "event": "batch_done",
@@ -113,8 +165,8 @@ class Proofreader:
                 if self._stop_flag:
                     yield {"event": "stopped", "data": {"message": "校对已停止"}}
                     return
-                text, br, pn = batches[i]
-                result = process_batch(text, br, pn)
+                text, br, pn, prefix, suffix = ctx_batches[i]
+                result = process_batch(text, br, pn, prefix, suffix)
                 results.append(result)
                 # Yield real-time progress for warmup batches too
                 yield {
@@ -137,12 +189,12 @@ class Proofreader:
                 yield {"event": "stopped", "data": {"message": "校对已停止"}}
                 return
 
-            remaining = batches[warm:]
+            remaining = ctx_batches[warm:]
             if remaining:
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     futures = {
-                        executor.submit(process_batch, text, br, pn): idx
-                        for idx, (text, br, pn) in enumerate(remaining)
+                        executor.submit(process_batch, text, br, pn, prefix, suffix): idx
+                        for idx, (text, br, pn, prefix, suffix) in enumerate(remaining)
                     }
                     for future in as_completed(futures):
                         if self._stop_flag:

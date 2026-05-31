@@ -2,6 +2,8 @@
   "zh": {
     "name": "中文",
     "prompt_lang": "zh",
+    "sentence_separators": "。！？",
+    "context_sentences": 2,
     "categories": {
       "用字错误": "#D44545",
       "用词不当": "#D4A86E",
@@ -16,6 +18,8 @@
   "en": {
     "name": "English",
     "prompt_lang": "en",
+    "sentence_separators": ".!?",
+    "context_sentences": 2,
     "categories": {
       "Spelling": "#D44545",
       "Grammar": "#6E9ED4",

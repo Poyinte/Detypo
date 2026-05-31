@@ -17,6 +17,8 @@ class LanguageProfile:
     categories: dict[str, str]  # {category_name: hex_color}
     system_prompt: str       # fully built system prompt
     false_reasons: list[str] # keywords for false-positive filtering
+    sentence_separators: str = "。！？"  # sentence boundary punctuation
+    context_sentences: int = 2            # sentences to include as context
 
 
 # ── Fallback defaults (used when languages.json omits a field) ──
@@ -78,6 +80,8 @@ def load_profiles(rules_dir: str, languages_json_path: str) -> dict[str, Languag
             categories=cfg["categories"],
             system_prompt=system_prompt,
             false_reasons=cfg.get("false_reasons", _FALLBACK_FALSE_REASONS),
+            sentence_separators=cfg.get("sentence_separators", "。！？"),
+            context_sentences=cfg.get("context_sentences", 2),
         )
     return profiles
 
