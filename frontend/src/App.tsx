@@ -172,7 +172,7 @@ export default function App() {
 
   // UI language
   const { t, uiLang } = useI18n()
-  void uiLang // used by child components via context; silence unused-var for now
+  const toDisplay = (cny: number) => uiLang === 'en' ? cny * 0.14 : cny  // CNY → USD at official rate
 
   // Proofreading language
   const [proofLang, setProofLang] = useState<string>('zh')
@@ -906,7 +906,7 @@ export default function App() {
                 {!showElapsed && proofCost > 0 && (
                   <>
                     <Separator orientation="vertical" className="h-3" />
-                    <span>{t('status.cost', { cost: proofCost.toFixed(2) })}</span>
+                    <span>{t('status.cost', { cost: toDisplay(proofCost).toFixed(2) })}</span>
                   </>
                 )}
               </>
@@ -914,7 +914,7 @@ export default function App() {
             {balance && (
               <>
                 <Separator orientation="vertical" className="h-3" />
-                <span>{t('status.balance', { balance: parseFloat(balance).toFixed(2) })}</span>
+                <span>{t('status.balance', { balance: toDisplay(parseFloat(balance)).toFixed(2) })}</span>
               </>
             )}
           </div>

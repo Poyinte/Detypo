@@ -26,7 +26,6 @@ Bilingual (ZH/EN) PDF proofreading tool — uses AI to spot common mistakes<br>
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> Features
 
 - **Fast Proofreading** — Uses `deepseek-v4-flash` for quick and accurate error detection
-- **Cross-Batch Context** — Passes adjacent-page context during proofreading, reducing false positives at page boundaries
 - **Review and Filter** — Browse findings after proofreading, accept or reject individual items
 - **Traceable Annotations** — Exported PDFs include detailed, locatable annotations for easy verification
 - **Bilingual Support** — Auto-detects document language and switches to the corresponding rule set

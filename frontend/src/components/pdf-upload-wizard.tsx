@@ -40,7 +40,16 @@ function mode(arr: number[]): number {
   return bestVal
 }
 
-function estimateTokens(pageTokenCounts: number[], start: number, end: number): { tokens: number; cost: number } {
+// Official DeepSeek v4-flash pricing per 1M tokens
+const PRICING = {
+  cny: { inputMiss: 1.0, inputHit: 0.02, output: 2.0, symbol: '¥' },
+  usd: { inputMiss: 0.14, inputHit: 0.0028, output: 0.28, symbol: '$' },
+}
+
+function estimateTokens(
+  pageTokenCounts: number[], start: number, end: number,
+  currency: 'CNY' | 'USD' = 'CNY',
+): { tokens: number; cost: number } {
   const selected = pageTokenCounts.slice(start - 1, end)
   if (!selected.length) return { tokens: 0, cost: 0 }
   const batchSize = getBatchSize(selected.length)
@@ -62,23 +71,24 @@ function estimateTokens(pageTokenCounts: number[], start: number, end: number): 
   const REPLY_RATIO = Math.max(0.35, Math.min(0.75, 0.2 + avgTokenPerSamplePage * 0.0006))
   const MIN_REPLY = 30
 
-  const SYS = 5200   // system prompt (padded for upper bound)
-  const ID = 350     // [#NNNN] markers + [PAGE_N] prefix per page (upper bound)
-  const PREFIX = 15  // user prefix "请校对以下文本：\n\n" per batch
+  const SYS = 5200              // system prompt (padded for upper bound)
+  const ID = 350                // [#NNNN] markers + [PAGEN] prefix per page (upper bound)
+  const PREFIX = 15             // user instruction per batch
+  const CONTEXT = 150           // cross-batch context headers + separators per batch
 
   const perBatchText = avgTokenPerSamplePage * modePages
-  const perBatchInput = perBatchText + modePages * ID + PREFIX + SYS
+  const perBatchInput = perBatchText + modePages * ID + PREFIX + CONTEXT + SYS
   const replyTokens = Math.max(MIN_REPLY, Math.round(perBatchInput * REPLY_RATIO))
   const perBatchTotal = perBatchInput + replyTokens
 
   // Token estimate (all batches, full count)
   const totalTokens = numBatches * perBatchTotal
 
-  // Cost estimate (¥): per-batch, 70% cache hit for system prompt
-  // System prompt: 30% miss (@¥1/M) + 70% hit (@¥0.02/M) per batch
-  const sysPerBatch = SYS * (0.3 * 1 + 0.7 * 0.02)
-  const textPerBatch = (perBatchText + modePages * ID + PREFIX) * 1   // always miss @ ¥1/M
-  const outPerBatch = replyTokens * 2                                   // output @ ¥2/M
+  // Cost estimate: 70% cache hit for system prompt
+  const p = PRICING[currency.toLowerCase() as 'cny' | 'usd']
+  const sysPerBatch = SYS * (0.3 * p.inputMiss + 0.7 * p.inputHit)
+  const textPerBatch = (perBatchText + modePages * ID + PREFIX + CONTEXT) * p.inputMiss
+  const outPerBatch = replyTokens * p.output
   const totalCost = numBatches * (sysPerBatch + textPerBatch + outPerBatch) / 1_000_000
 
   return { tokens: totalTokens, cost: totalCost }
@@ -102,12 +112,13 @@ export function PdfUploadWizard({
   availableLangs, proofLang, onSetProofLang,
   onStart, onUpload, onClose,
 }: PdfUploadWizardProps) {
-  const { t } = useI18n()
+  const { t, uiLang } = useI18n()
   const [dragOver, setDragOver] = useState(false)
   const [range, setRange] = useState<[number, number]>([1, pageCount])
   const [leftInput, setLeftInput] = useState('1')
   const [rightInput, setRightInput] = useState(String(pageCount))
   const [estimates, setEstimates] = useState({ tokens: 0, cost: 0 })
+  const currency = uiLang === 'en' ? 'USD' as const : 'CNY' as const
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Synchronize range when pageCount changes (new PDF loaded)
@@ -131,14 +142,14 @@ export function PdfUploadWizard({
     prevRangeRef.current = key
     clearTimeout(debounceRef.current)
     if (immediate) {
-      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd))
+      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency))
       return
     }
     debounceRef.current = setTimeout(() => {
-      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd))
+      setEstimates(estimateTokens(pageTokenCounts, rangeStart, rangeEnd, currency))
     }, 400)
     return () => clearTimeout(debounceRef.current)
-  }, [rangeStart, rangeEnd, pageTokenCounts])
+  }, [rangeStart, rangeEnd, pageTokenCounts, currency])
 
   const selectedPages = range[1] - range[0] + 1
 

@@ -26,7 +26,6 @@
 # <picture><source media="(prefers-color-scheme: dark)" srcset="./docs/icons/zap-dark.svg"><img src="./docs/icons/zap.svg" height="28" align="absmiddle"></picture> 基本功能
 
 - **快速校对** — 调用 `deepseek-v4-flash` 进行校对，快速发现错误
-- **跨页上下文** — 校对时自动传递跨页上下文，减少因跨页断句导致的误报
 - **错误整理** — 校对完成后，可对错误条目进行整理
 - **便于核查** — 导出的 PDF 文件带有可定位的详细注释，便于核查
 - **中英双语** — 自动检测文档语种，切换对应规则库进行校对
