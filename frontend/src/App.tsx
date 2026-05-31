@@ -390,7 +390,7 @@ export default function App() {
     abortRef.current?.abort()
     abortRef.current = null
     setErrors([]); setExcludedIds(new Set()); setCurrentPage(1)
-    setTotalTokens(0); setCacheHitTokens(0); setProofCost(0); setShowElapsed(true)
+    setTotalTokens(0); setCacheHitTokens(0); setProofCostCNY(0); setProofCostUSD(0); setShowElapsed(true)
     setModelName('')
     setShowProgress(true); setProgressPct(0); setDisconnected(false)
     setLogLines([])
