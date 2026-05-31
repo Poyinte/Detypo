@@ -54,7 +54,7 @@ Read `rules/languages.json`, add a new entry:
   "name": "Display Name",
   "prompt_lang": "xx",
   "sentence_separators": ".!?",
-  "context_sentences": 2,
+  "context_sentences": 3,
   "context_prefix_prompt": "Context from preceding text…",
   "context_suffix_prompt": "Context from following text…",
   "proofread_instruction": "Please proofread the following text:",
@@ -81,7 +81,7 @@ Read `rules/languages.json`, add a new entry:
 | :--- | :--- | :--- |
 | `prompt_lang` | Language of the prompt text (for display) | `"ja"` |
 | `sentence_separators` | Characters that end a sentence | `"。！？"` |
-| `context_sentences` | Sentences to pass as cross-batch context (usually 2) | `2` |
+| `context_sentences` | Sentences to pass as cross-batch context (usually 3) | `3` |
 | `context_prefix_prompt` | Header text above prefix context | "上文参考…" |
 | `context_suffix_prompt` | Header text above suffix context | "下文参考…" |
 | `proofread_instruction` | Instruction before the annotated text | "请校对以下文本：" |
@@ -98,11 +98,14 @@ The `system_prompt` MUST:
 1. Tell the model it is a professional proofreader
 2. Instruct it to follow the rules below (`{rules}`)
 3. List allowed categories (`{categories}`)
-4. Remind it that `[#NNNN]` are positional identifiers — do NOT proofread the
-   IDs themselves, and do NOT report missing spaces between markers and
-   adjacent words (the markers are formatting artifacts)
+4. Remind it that `[#NNNN]` at the end of a text segment is a positional
+   identifier, not body text — do NOT proofread it
 5. Require strict JSON output format: `{"errors": [...]}`
 6. State that each `[#NNNN]` appears at most once
+
+**Note:** The engine now places `[#NNNN]` IDs *after* each text segment
+(`{text}[{#NNNN}]`) rather than before, so the LLM reads text naturally
+without tags interrupting the flow. No "read through" or "spacing" rules needed.
 
 If `system_prompt` is omitted, the English fallback is used. If
 `false_reasons` is omitted, `["no error", "correct usage", "acceptable"]`
