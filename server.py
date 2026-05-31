@@ -19,6 +19,7 @@ from utils.config import UPLOAD_DIR, RULES_DIR, LANGUAGES_JSON, HOST, PORT, DEEP
 
 from core.language_profile import load_profiles, detect_language, hex_to_rgb
 
+import re
 import requests
 from pydantic import BaseModel
 
@@ -77,7 +78,6 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     # Count fixed per-batch overhead with the real tokenizer
     profile = LANGUAGE_PROFILES.get(detected_lang, LANGUAGE_PROFILES.get("zh"))
-    # Build the fixed template parts (without dynamic context text or page text)
     overhead_template = (
         profile.context_prefix_prompt + "\n"
         + "---\n"
@@ -88,10 +88,30 @@ async def upload_pdf(file: UploadFile = File(...)):
     sys_tokens = count_tokens(profile.system_prompt)
     batch_overhead_tokens = count_tokens(overhead_template)
 
+    # Count boundary sentence tokens per page (head = first N, tail = last N)
+    # Used by frontend to compute exact context text tokens for any page range
+    sep = profile.sentence_separators
+    ctx_n = profile.context_sentences
+    boundary_tokens = []
+    for text in page_texts:
+        if not text.strip():
+            boundary_tokens.append({"head": 0, "tail": 0})
+            continue
+        esc = re.escape(sep)
+        parts = re.split(f'(?<=[{esc}])', text)
+        sentences = [p.strip() for p in parts if p.strip()]
+        head = "".join(sentences[:ctx_n]) if sentences else ""
+        tail = "".join(sentences[-ctx_n:]) if sentences else ""
+        boundary_tokens.append({
+            "head": count_tokens(head),
+            "tail": count_tokens(tail),
+        })
+
     overhead = {
-        "sys": sys_tokens,                          # system prompt (real count)
-        "per_page": 350,                             # ID markers per page (estimate)
-        "per_batch": batch_overhead_tokens,          # instruction + context headers per batch (real count)
+        "sys": sys_tokens,
+        "per_page": 350,   # ID markers per page (estimate — span count varies)
+        "per_batch": batch_overhead_tokens,
+        "boundary_tokens": boundary_tokens,  # [{head, tail}] per page
     }
 
     sessions[file_id] = {

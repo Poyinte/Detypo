@@ -50,6 +50,7 @@ export interface TokenOverhead {
   sys: number       // system prompt tokens (real count from tokenizer)
   per_page: number  // ID markers per page (estimate)
   per_batch: number // instruction + context headers per batch (real count from tokenizer)
+  boundary_tokens?: { head: number; tail: number }[]  // per-page boundary sentence tokens
 }
 
 function estimateTokens(
@@ -83,8 +84,25 @@ function estimateTokens(
   const PER_PAGE = overhead?.per_page ?? 350
   const PER_BATCH = overhead?.per_batch ?? 165
 
+  // Compute actual context text tokens from boundary sentence counts
+  let avgContextTextPerBatch = 0
+  const bt = overhead?.boundary_tokens
+  const totalPages = pageTokenCounts.length
+  if (bt && bt.length === totalPages && numBatches > 1) {
+    let totalCtx = 0
+    for (let bi = 0; bi < numBatches; bi++) {
+      const batchStart = start - 1 + bi * batchSize
+      const batchEnd = Math.min(batchStart + batchSize, end) - 1
+      // Prefix: tail of page just before this batch
+      if (batchStart > 0 && bt[batchStart - 1]) totalCtx += bt[batchStart - 1].tail
+      // Suffix: head of page just after this batch
+      if (batchEnd + 1 < totalPages && bt[batchEnd + 1]) totalCtx += bt[batchEnd + 1].head
+    }
+    avgContextTextPerBatch = totalCtx / numBatches
+  }
+
   const perBatchText = avgTokenPerSamplePage * modePages
-  const perBatchInput = perBatchText + modePages * PER_PAGE + PER_BATCH + SYS
+  const perBatchInput = perBatchText + modePages * PER_PAGE + PER_BATCH + avgContextTextPerBatch + SYS
   const replyTokens = Math.max(MIN_REPLY, Math.round(perBatchInput * REPLY_RATIO))
   const perBatchTotal = perBatchInput + replyTokens
 
@@ -94,7 +112,7 @@ function estimateTokens(
   // Cost estimate: 70% cache hit for system prompt
   const p = PRICING[currency.toLowerCase() as 'cny' | 'usd']
   const sysPerBatch = SYS * (0.3 * p.inputMiss + 0.7 * p.inputHit)
-  const textPerBatch = (perBatchText + modePages * PER_PAGE + PER_BATCH) * p.inputMiss
+  const textPerBatch = (perBatchText + modePages * PER_PAGE + PER_BATCH + avgContextTextPerBatch) * p.inputMiss
   const outPerBatch = replyTokens * p.output
   const totalCost = numBatches * (sysPerBatch + textPerBatch + outPerBatch) / 1_000_000
 
