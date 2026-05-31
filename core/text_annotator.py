@@ -108,7 +108,7 @@ class TextAnnotator:
                     sid = self._make_id(self._counter)
                     page_map[sid] = {"page": page_num, "bbox": seg_bbox}
                     self._id_map[sid] = {"page": page_num, "bbox": seg_bbox}
-                    parts.append(f"[{sid}]{seg_text}")
+                    parts.append(f"{seg_text}[{sid}]")
 
         return "".join(parts), page_map
 
