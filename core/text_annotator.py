@@ -15,48 +15,63 @@ class TextAnnotator:
         return f"#{n:04d}"
 
     @staticmethod
-    def _split_span(text: str, bbox: tuple) -> list[tuple[str, tuple]]:
+    def _split_span(text: str, bbox: tuple,
+                    chars: list[dict] | None = None) -> list[tuple[str, tuple]]:
         """Split a span's text into micro-segments (~6 CJK chars each)
         and compute proportionally-split bboxes."""
         if not text.strip():
             return [(text, bbox)]
+
+        char_bb: list[tuple[float, float, float, float]] | None = None
+        if chars:
+            char_bb = []
+            for c in chars:
+                cb = c["bbox"]
+                char_bb.append((cb[0], cb[1], cb[2], cb[3]))
 
         x0, y0, x1, y1 = bbox
         total_w = x1 - x0
 
         # Split into CJK-aware chunks
         segments = []
+        boundaries: list[tuple[int, int]] = []
         buf = ""
         cjk_count = 0
+        buf_start = 0
 
-        for ch in text:
+        for i, ch in enumerate(text):
+            if not buf:
+                buf_start = i
             buf += ch
             if '一' <= ch <= '鿿' or '㐀' <= ch <= '䶿':
                 cjk_count += 1
             if cjk_count >= 10 or ch in '，。、；：？！“”‘’…—）':
                 if buf.strip():
                     segments.append(buf)
+                    boundaries.append((buf_start, i))
                 buf = ""
                 cjk_count = 0
 
         if buf.strip():
             segments.append(buf)
+            boundaries.append((buf_start, len(text) - 1))
 
-        if len(segments) <= 1:
+        if len(segments) <= 1 or not char_bb:
             return [(text, bbox)]
 
-        # Calculate proportional bboxes
-        total_chars = len(text)
+        # Compute accurate segment bboxes from character bboxes
         result = []
-        char_pos = 0
-        for seg in segments:
-            seg_len = len(seg)
-            ratio_start = char_pos / total_chars
-            ratio_end = (char_pos + seg_len) / total_chars
-            seg_x0 = x0 + total_w * ratio_start
-            seg_x1 = x0 + total_w * ratio_end
-            result.append((seg, (seg_x0, y0, seg_x1, y1)))
-            char_pos += seg_len
+        for seg, (start_i, end_i) in zip(segments, boundaries):
+            if start_i < len(char_bb) and end_i < len(char_bb):
+                cb0 = char_bb[start_i]
+                cb1 = char_bb[end_i]
+                seg_x0 = cb0[0]
+                seg_y0 = cb0[1]
+                seg_x1 = cb1[2]
+                seg_y1 = max(cb0[3], cb1[3])
+                result.append((seg, (seg_x0, seg_y0, seg_x1, seg_y1)))
+            else:
+                result.append((seg, bbox))
 
         return result
 
@@ -101,7 +116,8 @@ class TextAnnotator:
                     if not text:
                         continue
                     bbox = tuple(span["bbox"])
-                    line_segments.extend(self._split_span(text, bbox))
+                    chars = span.get("chars", None)
+                    line_segments.extend(self._split_span(text, bbox, chars))
 
                 for seg_text, seg_bbox in self._merge_punctuation(line_segments):
                     self._counter += 1
