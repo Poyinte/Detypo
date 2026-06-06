@@ -57,6 +57,21 @@ interface ErrorItem {
   bbox: number[]
 }
 
+interface SseData {
+  pages?: number[] | string
+  batches?: number
+  current?: number
+  total?: number
+  tokens?: number
+  prompt_tokens?: number
+  completion_tokens?: number
+  cache_hit?: number
+  cache_miss?: number
+  model?: string
+  errors?: ErrorItem[]
+  message?: string
+}
+
 
 function esc(s: string) {
   const d = document.createElement('div')
@@ -143,7 +158,15 @@ export default function App() {
   const [setupOpen, setSetupOpen] = useState(false)
   // On mount, fall back to server-saved key if localStorage is empty (survives port changes)
   useEffect(() => {
-    if (localStorage.getItem('deepseek_api_key')) return
+    const storedKey = localStorage.getItem('deepseek_api_key')
+    if (storedKey) {
+      fetch(`${API}/api/settings/key`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: storedKey }),
+      }).catch(() => {})
+      return
+    }
     fetch(`${API}/api/settings/key`)
       .then(r => r.json())
       .then(d => {
@@ -270,8 +293,7 @@ export default function App() {
   const realProgressRef = useRef(0)
   const finishingRef = useRef(false)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSSE = useCallback((ev: string, d: any) => {
+  const handleSSE = useCallback((ev: string, d: SseData) => {
     switch (ev) {
       case 'extracting':
         pushLog(`extracting pages=${d.pages}`)
@@ -283,14 +305,16 @@ export default function App() {
         pushLog(`llm_waiting batches=${d.batches}`)
         break
       case 'batch_done': {
-        batchDoneRef.current = d.current
+        const current = d.current ?? batchDoneRef.current + 1
         const total = batchTotalRef.current || d.total || 1
-        const real = d.current / Math.max(total, 1)
+        const pages = Array.isArray(d.pages) ? d.pages : undefined
+        batchDoneRef.current = current
+        const real = current / Math.max(total, 1)
         realProgressRef.current = real
         fakeProgressRef.current?.updateReal(real)
         pushLog([
-          `batch=${d.current}/${d.total || batchTotalRef.current}`,
-          `pages=${fmtPages(d.pages)}`,
+          `batch=${current}/${d.total || batchTotalRef.current}`,
+          `pages=${fmtPages(pages)}`,
           `prompt=${d.prompt_tokens || 0}`,
           `completion=${d.completion_tokens || 0}`,
           `tokens=${d.tokens || 0}`,
@@ -398,21 +422,35 @@ export default function App() {
     // eslint-disable-next-line react-hooks/immutability
     fakeProgressRef.current = new FakeProgress()
     fakeProgressRef.current.start(1) // placeholder, llm_waiting 会以真实 batch 数重启
-    // Fetch balance before proofreading (await to ensure it's available)
+    // Save the key server-side before SSE; EventSource cannot send auth headers.
     try {
-      const balResp = await fetch(`${API}/api/settings/balance`, {
+      const balancePromise = fetch(`${API}/api/settings/balance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: apiKey }),
-      })
-      const balData = await balResp.json()
-      balanceRef.current = balData.balance || '0'
-    } catch { /* balance fetch is best-effort */ }
+      }).then(r => r.json())
+      const saveKeyPromise = fetch(`${API}/api/settings/key`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey }),
+      }).then(r => r.json())
+      const [balanceResult, saveKeyResult] = await Promise.allSettled([balancePromise, saveKeyPromise])
+      if (balanceResult.status === 'fulfilled') {
+        balanceRef.current = balanceResult.value.balance || '0'
+      }
+      if (saveKeyResult.status !== 'fulfilled' || !saveKeyResult.value.valid) {
+        throw new Error(saveKeyResult.status === 'fulfilled' ? saveKeyResult.value.message : 'API key validation failed')
+      }
+    } catch (e: unknown) {
+      pushLog(`api key error: ${(e as Error)?.message || String(e)}`)
+      setShowElapsed(false); setShowProgress(false)
+      fakeProgressRef.current?.end()
+      return
+    }
     errCountRef.current = 0
     startTimer()
     try {
       const url = new URL(`${API}/api/proofread/${fileId}`, window.location.origin)
-      url.searchParams.set('token', apiKey)
       url.searchParams.set('lang', proofLang)
       if (range) {
         url.searchParams.set('start_page', String(range[0]))
@@ -422,8 +460,10 @@ export default function App() {
       abortRef.current = { abort: () => es.close() }
       ;['extracting', 'llm_waiting', 'batch_done', 'page_done', 'complete', 'proofread_error', 'stopped']
         .forEach(ev => es.addEventListener(ev, (e: MessageEvent) => {
-          let d: any
-          try { d = JSON.parse(e.data) } catch { return }
+          let parsed: unknown
+          try { parsed = JSON.parse(e.data) } catch { return }
+          if (!parsed || typeof parsed !== 'object') return
+          const d = parsed as SseData
           if (typeof d.tokens === 'number' && ev === 'batch_done') {
             totalPromptRef.current += d.prompt_tokens || 0
             totalCompletionRef.current += d.completion_tokens || 0
@@ -492,7 +532,7 @@ export default function App() {
     } catch { setKeyStatus('error') }
   }
 
-  const toggleDarkMode = useCallback(() => {
+  const toggleDarkMode = () => {
     const next = themeMode === 'dark' ? 'light' : themeMode === 'light' ? 'system' : 'dark'
     setThemeMode(next)
     if (next === 'system') {
@@ -502,7 +542,7 @@ export default function App() {
       localStorage.setItem('theme', next)
       setDarkMode(next === 'dark')
     }
-  }, [themeMode])
+  }
 
   // Sync dark class to <html> whenever darkMode changes
   useEffect(() => {

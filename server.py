@@ -1,6 +1,7 @@
 """PDF 校对助手 — FastAPI 后端"""
 import asyncio
 import json
+import logging
 import os
 import shutil
 import uuid
@@ -21,7 +22,7 @@ from core.language_profile import load_profiles, detect_language, hex_to_rgb
 
 import re
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ApiKeyCheck(BaseModel):
@@ -36,6 +37,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # In-memory session store
 sessions: dict[str, dict] = {}
+
+MAX_UPLOAD_BYTES = int(os.getenv("DETYPO_MAX_UPLOAD_MB", "100")) * 1024 * 1024
+READ_CHUNK_BYTES = 1024 * 1024
 
 
 # Language profiles — loaded once at startup
@@ -54,21 +58,53 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     file_id = uuid.uuid4().hex[:12]
     file_path = os.path.join(UPLOAD_DIR, f"{file_id}.pdf")
-    content = await file.read()
-    with open(file_path, "wb") as f:
-        f.write(content)
-
     orig_path = os.path.join(UPLOAD_DIR, f"{file_id}_orig.pdf")
-    shutil.copy2(file_path, orig_path)
 
-    engine = PdfEngine(file_path)
+    size = 0
+    try:
+        with open(file_path, "wb") as f:
+            while True:
+                chunk = await file.read(READ_CHUNK_BYTES)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        413,
+                        f"PDF is too large; maximum upload size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB",
+                    )
+                f.write(chunk)
+        if size == 0:
+            raise HTTPException(400, "Uploaded PDF is empty")
+
+        shutil.copy2(file_path, orig_path)
+        engine = PdfEngine(file_path)
+    except HTTPException:
+        for path in (file_path, orig_path):
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except OSError:
+                pass
+        raise
+    except Exception as exc:
+        for path in (file_path, orig_path):
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except OSError:
+                pass
+        raise HTTPException(400, f"Unable to read PDF: {exc}") from exc
+
     page_count = engine.page_count
 
     # Extract text from all pages, count tokens with offline tokenizer
     page_texts = []
-    for p in range(page_count):
-        page_texts.append(engine.get_page_plain_text(p))
-    engine.close()
+    try:
+        for p in range(page_count):
+            page_texts.append(engine.get_page_plain_text(p))
+    finally:
+        engine.close()
 
     from utils.token_counter import tokens_per_page, count_tokens
     page_token_counts = tokens_per_page(page_texts)
@@ -143,12 +179,13 @@ async def get_page_image(file_id: str, page_num: int):
         raise HTTPException(404, "文件不存在")
 
     engine = PdfEngine(session["path"])
-    if page_num < 0 or page_num >= engine.page_count:
-        engine.close()
-        raise HTTPException(404, "页码超出范围")
+    try:
+        if page_num < 0 or page_num >= engine.page_count:
+            raise HTTPException(404, "页码超出范围")
 
-    png_bytes = engine.render_page(page_num, scale=1.5)
-    engine.close()
+        png_bytes = engine.render_page(page_num, scale=1.5)
+    finally:
+        engine.close()
     return Response(content=png_bytes, media_type="image/png")
 
 
@@ -174,34 +211,43 @@ async def get_pdf_file(file_id: str):
 async def proofread_stream(
     file_id: str, request: Request,
     token: str = None,
-    start_page: int = None,
-    end_page: int = None,
+    start_page: int = Query(default=None, ge=1),
+    end_page: int = Query(default=None, ge=1),
 ):
     session = sessions.get(file_id)
     if not session:
         raise HTTPException(404, "文件不存在")
-    if session.get("status") == "running":
+    if session.get("status") in ("running", "stopping"):
         raise HTTPException(400, "校对正在进行中")
 
-    session["status"] = "running"
-    engine = PdfEngine(session["path"])
-    annotator = TextAnnotator(engine)
     # Support both header and query param
     api_key = _get_api_key_from_request(request)
     if (not api_key or not api_key.startswith("sk-")) and token and token.startswith("sk-"):
         api_key = token
     if not api_key or not api_key.startswith("sk-"):
-        engine.close()
         raise HTTPException(400, "请先在设置中配置有效的 DeepSeek API Key")
-    llm = LlmClient(api_key=api_key)
+
+    total_pages = session["page_count"]
+    requested_start = start_page or 1
+    requested_end = end_page or total_pages
+    if requested_start > requested_end:
+        raise HTTPException(400, "Start page must be less than or equal to end page")
+    if requested_end > total_pages:
+        raise HTTPException(400, f"End page exceeds PDF page count ({total_pages})")
+
     # Determine proofreading language
     lang = request.query_params.get("lang") or session.get("detected_lang", "zh")
     if lang not in LANGUAGE_PROFILES:
         lang = "zh"
+
+    engine = PdfEngine(session["path"])
+    annotator = TextAnnotator(engine)
+    llm = LlmClient(api_key=api_key)
     profile = LANGUAGE_PROFILES[lang]
     session["proof_lang"] = lang  # store for export
     proofreader = Proofreader(engine, annotator, llm, profile)
 
+    session["status"] = "running"
     session["engine"] = engine
     session["proofreader"] = proofreader
 
@@ -211,18 +257,38 @@ async def proofread_stream(
 
     async def event_stream():
         q = asyncio.Queue()
+        terminal_event = None
 
         def run_proofreader():
+            thread_terminal = None
             try:
                 for event in proofreader.run(
-                    start_page=start_page or 1,
-                    end_page=end_page or engine.page_count,
+                    start_page=requested_start,
+                    end_page=requested_end,
                 ):
+                    thread_terminal = event.get("event")
                     asyncio.run_coroutine_threadsafe(q.put(event), loop)
-                asyncio.run_coroutine_threadsafe(q.put(None), loop)
             except Exception as e:
+                thread_terminal = "error"
                 asyncio.run_coroutine_threadsafe(
                     q.put({"event": "error", "data": {"message": str(e)}}), loop)
+            finally:
+                try:
+                    engine.save()
+                except Exception as e:
+                    logging.warning(f"Failed to save PDF for session {file_id}: {e}")
+                finally:
+                    engine.close()
+                session["errors"] = proofreader.errors
+                if thread_terminal == "stopped":
+                    session["status"] = "stopped"
+                elif thread_terminal in ("complete", None):
+                    session["status"] = "done"
+                else:
+                    session["status"] = "error"
+                session["engine"] = None
+                session["proofreader"] = None
+                asyncio.run_coroutine_threadsafe(q.put(None), loop)
 
         thread = threading.Thread(target=run_proofreader, daemon=True)
         thread.start()
@@ -238,16 +304,15 @@ async def proofread_stream(
                     break
                 yield f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False)}\n\n"
                 if event["event"] in ("complete", "proofread_error", "error", "stopped"):
+                    terminal_event = event["event"]
                     break
         finally:
-            thread.join(timeout=5)
-            try:
-                engine.save()
-            except Exception as e:
-                import logging
-                logging.warning(f"Failed to save PDF for session {file_id}: {e}")
-            session["status"] = "done"
-            session["errors"] = proofreader.errors
+            if terminal_event is None and thread.is_alive():
+                proofreader.stop()
+                session["status"] = "stopping"
+                thread.join(timeout=1)
+            else:
+                thread.join(timeout=5)
 
     return StreamingResponse(
         event_stream(),
@@ -272,7 +337,7 @@ async def stop_proofread(file_id: str):
 
 
 class ExportRequest(BaseModel):
-    exclude_ids: list[str] = []
+    exclude_ids: list[str] = Field(default_factory=list)
 
 
 @app.post("/api/export/{file_id}")
@@ -291,29 +356,39 @@ async def export_pdf(file_id: str, body: ExportRequest):
     output_path = os.path.join(UPLOAD_DIR, f"{file_id}_export.pdf")
 
     engine = PdfEngine(orig_path)
-    lang = session.get("proof_lang", session.get("detected_lang", "zh"))
-    profile = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["zh"])
-    default_cat = list(profile.categories.keys())[0]
-    default_hex = list(profile.categories.values())[0]
-    for err in errors:
-        if err.get("error_id") in exclude_set:
-            continue
-        category = (err.get("category") or "").strip() or default_cat
-        hex_color = profile.categories.get(category, default_hex)
-        color = hex_to_rgb(hex_color)
-        bbox = tuple(err.get("bbox", [0, 0, 0, 0]))
-        page_idx = err.get("page", 1) - 1
-        reason = err.get("reason", "")
-        correction_text = f"{err.get('original', '')} → {err.get('correction', '')}\n——————\n{reason}"
-        original_text = err.get("original", "")
-        engine.add_highlight(
-            page_idx, bbox, color,
-            note=correction_text,
-            search_text=original_text,
-            title=category,
-        )
-    engine.save_as(output_path)
-    engine.close()
+    try:
+        lang = session.get("proof_lang", session.get("detected_lang", "zh"))
+        profile = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["zh"])
+        default_cat = list(profile.categories.keys())[0]
+        default_hex = list(profile.categories.values())[0]
+        for err in errors:
+            if err.get("error_id") in exclude_set:
+                continue
+            category = (err.get("category") or "").strip() or default_cat
+            hex_color = profile.categories.get(category, default_hex)
+            try:
+                color = hex_to_rgb(hex_color)
+                bbox_values = err.get("bbox", [0, 0, 0, 0])
+                if len(bbox_values) != 4:
+                    continue
+                bbox = tuple(float(v) for v in bbox_values)
+                page_idx = int(err.get("page", 1)) - 1
+            except (TypeError, ValueError):
+                continue
+            if page_idx < 0 or page_idx >= engine.page_count:
+                continue
+            reason = err.get("reason", "")
+            correction_text = f"{err.get('original', '')} → {err.get('correction', '')}\n——————\n{reason}"
+            original_text = err.get("original", "")
+            engine.add_highlight(
+                page_idx, bbox, color,
+                note=correction_text,
+                search_text=original_text,
+                title=category,
+            )
+        engine.save_as(output_path)
+    finally:
+        engine.close()
 
     return FileResponse(
         output_path,
@@ -336,17 +411,22 @@ async def get_session(file_id: str):
 
 KEY_FILE = Path(__file__).parent / ".detypo-key"
 
+
+def _read_saved_api_key() -> str:
+    try:
+        if KEY_FILE.exists():
+            key = KEY_FILE.read_text(encoding="utf-8").strip()
+            if key.startswith("sk-"):
+                return key
+    except Exception:
+        pass
+    return ""
+
+
 @app.get("/api/settings/key")
 async def get_api_key():
     """Return the saved API key (from server-side file), so it survives port changes."""
-    try:
-        if KEY_FILE.exists():
-            key = KEY_FILE.read_text().strip()
-            if key.startswith("sk-"):
-                return {"api_key": key}
-    except Exception:
-        pass
-    return {"api_key": ""}
+    return {"api_key": _read_saved_api_key()}
 
 
 @app.post("/api/settings/key")
@@ -368,7 +448,7 @@ async def check_api_key(body: ApiKeyCheck):
         if resp.status_code == 200:
             # Save valid key server-side so it survives port/restart changes
             try:
-                KEY_FILE.write_text(key)
+                KEY_FILE.write_text(key, encoding="utf-8")
             except Exception:
                 pass
             return {"valid": True, "message": "API Key 验证成功"}
@@ -382,6 +462,8 @@ async def check_api_key(body: ApiKeyCheck):
         return {"valid": False, "message": "连接超时，请检查网络"}
     except requests.ConnectionError:
         return {"valid": False, "message": "无法连接 DeepSeek API，请检查网络"}
+    except requests.RequestException as e:
+        return {"valid": False, "message": str(e)}
 
 
 @app.post("/api/settings/balance")
@@ -423,7 +505,19 @@ def _get_api_key_from_request(request) -> str:
         key = auth[7:].strip()
         if key.startswith("sk-"):
             return key
-    return DEEPSEEK_API_KEY
+    return _read_saved_api_key() or DEEPSEEK_API_KEY
+
+
+def _safe_static_file(base: Path, requested_path: str) -> Path | None:
+    """Return a file inside base, or None if the request escapes the directory."""
+    try:
+        base_resolved = base.resolve()
+        candidate = (base / requested_path).resolve()
+        if not candidate.is_file() or not candidate.is_relative_to(base_resolved):
+            return None
+        return candidate
+    except (OSError, ValueError):
+        return None
 
 
 # Serve React build (production) or static (legacy)
@@ -438,14 +532,14 @@ if frontend_dist.exists():
 async def serve_frontend(full_path: str):
     # Try React build first
     if frontend_dist.exists():
-        file_path = frontend_dist / full_path
-        if file_path.is_file():
+        file_path = _safe_static_file(frontend_dist, full_path)
+        if file_path:
             return FileResponse(str(file_path))
         return HTMLResponse((frontend_dist / "index.html").read_text(encoding="utf-8"))
     # Fallback to legacy static
     if static_dir.exists() and full_path.startswith("static/"):
-        file_path = static_dir / full_path[7:]
-        if file_path.is_file():
+        file_path = _safe_static_file(static_dir, full_path[7:])
+        if file_path:
             return FileResponse(str(file_path))
     index_path = static_dir / "index.html"
     if index_path.exists():

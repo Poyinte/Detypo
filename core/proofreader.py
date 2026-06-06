@@ -18,6 +18,14 @@ class Proofreader:
         self._stop_flag = False
         self._errors: list[dict] = []
 
+    @staticmethod
+    def _normalize_error_id(raw_id: str) -> str | None:
+        """Normalize LLM-returned IDs such as '#0001', '0001', or '[#0001]'."""
+        match = re.search(r"#?(\d+)", str(raw_id or ""))
+        if not match:
+            return None
+        return f"#{int(match.group(1)):04d}"
+
     def run(self, start_page: int = 1, end_page: int = None):
         """Generator that yields SSE events: {event, data} dicts.
         Uses parallel LLM calls for speed — all batches dispatched concurrently."""
@@ -58,7 +66,7 @@ class Proofreader:
         # ── Phase 1.5: Extract cross-batch context ──
         def _strip_ids(text: str) -> str:
             """Remove [#NNNN] span IDs, keeping plain text."""
-            text = re.sub(r'\[#\d{4}\]', '', text)    # [#0001]
+            text = re.sub(r'\[#\d+\]', '', text)    # [#0001]
             return text.strip()
 
         def _split_sentences(text: str, separators: str) -> list[str]:
@@ -234,10 +242,9 @@ class Proofreader:
 
             resolved = []
             for err in llm_errors:
-                err_id = err.get("error_id", "").strip()
-                # Normalize: LLM may return "#0001" or "0001" — make consistent
-                if not err_id.startswith("#"):
-                    err_id = f"#{err_id}"
+                err_id = self._normalize_error_id(err.get("error_id", ""))
+                if not err_id:
+                    continue
                 if err_id in seen_ids:
                     continue
                 seen_ids.add(err_id)

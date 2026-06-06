@@ -12,7 +12,7 @@ class LlmError(Exception):
 
 class LlmClient:
     def __init__(self, model: str = None, temperature: float = None, api_key: str = None):
-        raw_key = api_key or DEEPSEEK_API_KEY
+        raw_key = (api_key or DEEPSEEK_API_KEY or "").strip()
         if raw_key.lower().startswith("bearer "):
             raw_key = raw_key[7:]
         self.api_key = raw_key.strip()
@@ -132,6 +132,16 @@ class LlmClient:
                     "无法连接 DeepSeek API，已重试 3 次。请检查网络连接和 API Key。",
                     "地址: " + DEEPSEEK_BASE_URL,
                 )
+            except requests.RequestException as e:
+                last_exc = e
+                if attempt < 2:
+                    wait = 2 ** attempt
+                    _time.sleep(wait)
+                    continue
+                raise LlmError(
+                    "DeepSeek API 请求失败，已重试 3 次。请稍后重试。",
+                    str(e),
+                )
         else:
             raise LlmError(f"DeepSeek API 并发限制（HTTP 429），已重试 3 次均失败。请稍后重试。")
 
@@ -143,9 +153,18 @@ class LlmClient:
                 err_msg = resp.text or f"HTTP {resp.status_code}"
             raise LlmError(f"DeepSeek API 错误: {err_msg}")
 
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError as exc:
+            raise LlmError(
+                "DeepSeek API 返回了无法解析的响应。",
+                (resp.text or "")[:500],
+            ) from exc
         usage = data.get("usage", {})
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+        choices = data.get("choices") or []
+        if not choices:
+            return [], usage
+        content = choices[0].get("message", {}).get("content", "{}")
 
         try:
             errors = json.loads(content).get("errors", [])

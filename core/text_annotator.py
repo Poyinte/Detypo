@@ -139,9 +139,10 @@ class TextAnnotator:
         return "".join(all_text), all_map
 
     def lookup(self, annot_id: str) -> dict | None:
-        clean_id = annot_id.strip("[]").strip()
-        if not clean_id.startswith("#"):
-            clean_id = f"#{clean_id}"
+        match = re.search(r"#?(\d+)", str(annot_id or ""))
+        if not match:
+            return None
+        clean_id = f"#{int(match.group(1)):04d}"
         return self._id_map.get(clean_id)
 
     def clear(self):
