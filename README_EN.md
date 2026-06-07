@@ -14,7 +14,7 @@ Bilingual (ZH/EN) PDF proofreading tool — uses AI to spot common mistakes<br>
 <sub><code>**</> Vibe Coding**</code> with <a href="https://platform.deepseek.com/"><img src="https://img.shields.io/badge/-DeepSeek_V4-4D6BFE?style=flat-square&logo=deepseek&logoColor=white" height="18" align="center"></a></sub>
 
 ![Python](https://img.shields.io/badge/-Python_3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
-![Node.js](https://img.shields.io/badge/-Node.js_18+-339933?style=flat-square&logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/-Node.js_18+_dev_only-339933?style=flat-square&logo=node.js&logoColor=white)
 </div>
 <br><br>
 <div align="right">
@@ -70,8 +70,17 @@ English proofreading detects the following error types:
 ## Prerequisites
 
 - **Python 3.10+**
-- **Node.js 18+**
 - **[DeepSeek API Key](https://platform.deepseek.com/api_keys)**
+
+> If you use the prebuilt archive from GitHub Releases, Node.js is not required for normal use. Node.js 18+ is only needed for development mode or rebuilding the frontend from source.
+
+## Download and Install (No Git Needed)
+
+1. Open [GitHub Releases](https://github.com/Poyinte/Detypo/releases), then download `detypo-v*-prebuilt.zip` for Windows or `detypo-v*-prebuilt.tar.gz` for macOS / Linux.
+2. Extract the archive anywhere.
+3. On Windows, double-click `detypo.bat`. On macOS / Linux, run `chmod +x ./detypo && ./detypo`.
+
+On first launch, Detypo installs Python dependencies automatically and opens the local app URL printed in the terminal.
 
 ## Docker
 
@@ -87,7 +96,7 @@ docker run -p 8520:8520 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 
 Then open the URL printed in the terminal (default `http://localhost:8520`; auto-switches if the port is in use).
 
-## Windows
+## Windows (From Source)
 
 ```bash
 git clone git@github.com:Poyinte/Detypo.git
@@ -100,7 +109,7 @@ detypo.bat dev          # Development mode (hot-reload), browser at :5173
 detypo.bat stop         # Stop background services
 ```
 
-## macOS / Linux
+## macOS / Linux (From Source)
 
 ```bash
 git clone git@github.com:Poyinte/Detypo.git

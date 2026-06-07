@@ -10,7 +10,8 @@
 # Port: auto-detected (scans upward from 8520). The actual port is shown
 # in the banner and written to .detypo-port.
 #
-# Requires: Python 3.10+, Node.js 18+
+# Requires: Python 3.10+
+# Node.js 18+ is only needed for dev mode or source checkouts without frontend/dist.
 # =============================================================================
 
 set -e
@@ -137,6 +138,17 @@ ensure_deps() {
         }
         ok "Python deps ready"
     fi
+}
+
+ensure_node() {
+    if ! command -v node &>/dev/null; then
+        err "Node.js not found. Please install Node.js 18+ or download a prebuilt Detypo release."
+        exit 1
+    fi
+}
+
+ensure_frontend_deps() {
+    ensure_node
     if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
         info "Installing frontend dependencies..."
         (cd "$FRONTEND_DIR" && npm install --silent) || {
@@ -177,9 +189,14 @@ do_prod() {
     info "Detypo - Prod Mode"
     ensure_deps
 
-    info "Building frontend..."
-    (cd "$FRONTEND_DIR" && npm run build) || { err "Frontend build failed"; exit 1; }
-    ok "Frontend build done"
+    if [ -f "$FRONTEND_DIR/dist/index.html" ]; then
+        ok "Using prebuilt frontend"
+    else
+        ensure_frontend_deps
+        info "Building frontend..."
+        (cd "$FRONTEND_DIR" && npm run build) || { err "Frontend build failed"; exit 1; }
+        ok "Frontend build done"
+    fi
 
     echo ""
     echo -e "${GREEN}======================================${NC}"
@@ -202,6 +219,7 @@ do_prod() {
 do_dev() {
     info "Detypo - Dev Mode"
     ensure_deps
+    ensure_frontend_deps
 
     info "Starting backend (127.0.0.1:${BACKEND_PORT})..."
     "$PYTHON" server.py --port "$BACKEND_PORT" > /tmp/detypo-backend.log 2>&1 &

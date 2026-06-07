@@ -16,7 +16,8 @@ setlocal enabledelayedexpansion
 :: Ports are auto-detected (OS-assigned). The actual ports are shown in the
 :: banner. The backend writes .detypo-port so cleanup knows which port to kill.
 ::
-:: Requires: Python 3.10+, Node.js 18+
+:: Requires: Python 3.10+
+:: Node.js 18+ is only needed for dev mode or source checkouts without frontend/dist.
 :: =============================================================================
 
 set "PORT_FILE=%~dp0.detypo-port"
@@ -64,14 +65,6 @@ for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%" !PREFERRED_PORT!`) do set "BACKEN
 for /f "usebackq" %%p in (`%PYTHON% "%TMP_PY%" 0`) do set "FRONTEND_PORT=%%p"
 del "%TMP_PY%" >nul 2>&1
 
-:: ---- Check Node ----
-where node >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [detypo] Node.js not found. Please install Node.js 18+
-    pause
-    exit /b 1
-)
-
 :: ---- Dispatch ----
 if /i "%~1"=="stop" goto :do_stop
 if /i "%~1"=="dev"  goto :do_dev
@@ -95,29 +88,39 @@ if %errorlevel% neq 0 (
     echo [detypo] Python deps ready
 )
 
-:: Install and build frontend
-if not exist "frontend\node_modules\" (
-    echo [detypo] Installing frontend dependencies...
-    cd frontend
-    call npm install --silent
-    cd ..
+:: Install and build frontend only when the prebuilt release assets are absent
+if exist "frontend\dist\index.html" (
+    echo [detypo] Using prebuilt frontend
+) else (
+    where node >nul 2>nul
     if !errorlevel! neq 0 (
-        echo [detypo] Frontend dep install failed
+        echo [detypo] Node.js not found. Please install Node.js 18+ or download a prebuilt Detypo release.
         pause
         exit /b 1
     )
-    echo [detypo] Frontend deps ready
+    if not exist "frontend\node_modules\" (
+        echo [detypo] Installing frontend dependencies...
+        cd frontend
+        call npm install --silent
+        cd ..
+        if !errorlevel! neq 0 (
+            echo [detypo] Frontend dep install failed
+            pause
+            exit /b 1
+        )
+        echo [detypo] Frontend deps ready
+    )
+    echo [detypo] Building frontend...
+    cd frontend
+    call npm run build
+    cd ..
+    if !errorlevel! neq 0 (
+        echo [detypo] Frontend build failed
+        pause
+        exit /b 1
+    )
+    echo [detypo] Frontend build done
 )
-echo [detypo] Building frontend...
-cd frontend
-call npm run build
-cd ..
-if %errorlevel% neq 0 (
-    echo [detypo] Frontend build failed
-    pause
-    exit /b 1
-)
-echo [detypo] Frontend build done
 
 echo.
 echo ======================================
@@ -141,6 +144,13 @@ goto :eof
 :: ======================== DEV MODE ========================
 :do_dev
 echo [detypo] Detypo - Dev Mode
+
+where node >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [detypo] Node.js not found. Please install Node.js 18+
+    pause
+    exit /b 1
+)
 
 :: Install Python deps
 %PYTHON% -c "import fastapi,uvicorn,pymupdf,requests,pydantic" >nul 2>&1

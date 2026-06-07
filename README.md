@@ -14,7 +14,7 @@
 <sub><code>**</> Vibe Coding**</code> with <a href="https://platform.deepseek.com/"><img src="https://img.shields.io/badge/-DeepSeek_V4-4D6BFE?style=flat-square&logo=deepseek&logoColor=white" height="18" align="center"></a></sub>
 
 ![Python](https://img.shields.io/badge/-Python_3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
-![Node.js](https://img.shields.io/badge/-Node.js_18+-339933?style=flat-square&logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/-Node.js_18+_dev_only-339933?style=flat-square&logo=node.js&logoColor=white)
 </div>
 <br><br>
 <div align="right">
@@ -70,8 +70,17 @@
 ## 准备工作
 
 - **Python 3.10+**
-- **Node.js 18+**
 - **[DeepSeek API Key](https://platform.deepseek.com/api_keys)**
+
+> 使用 GitHub Release 中的预构建压缩包时，普通使用不需要 Node.js；只有开发模式或从源码重新构建前端时才需要 Node.js 18+。
+
+## 下载安装（无需 Git）
+
+1. 打开 [GitHub Releases](https://github.com/Poyinte/Detypo/releases)，下载 `detypo-v*-prebuilt.zip`（Windows）或 `detypo-v*-prebuilt.tar.gz`（macOS / Linux）
+2. 解压到任意目录
+3. Windows 双击 `detypo.bat`；macOS / Linux 运行 `chmod +x ./detypo && ./detypo`
+
+首次运行会自动安装 Python 依赖，启动后在浏览器中打开终端打印的本地地址。
 
 ## Docker
 
@@ -87,7 +96,7 @@ docker run -p 8520:8520 -e DEEPSEEK_API_KEY=sk-xxx poyinte/detypo
 
 然后访问终端打印的地址（默认 `http://localhost:8520`，端口被占用会自动切换）。
 
-## Windows
+## Windows（从源码运行）
 
 ```bash
 git clone git@github.com:Poyinte/Detypo.git
@@ -100,7 +109,7 @@ detypo.bat dev          # 开发模式（热重载），浏览器打开 :5173
 detypo.bat stop         # 停止后台服务
 ```
 
-## macOS / Linux
+## macOS / Linux（从源码运行）
 
 ```bash
 git clone git@github.com:Poyinte/Detypo.git

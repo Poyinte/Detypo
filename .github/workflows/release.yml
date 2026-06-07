@@ -1,0 +1,85 @@
+name: Build GitHub release assets
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Assemble release archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          ROOT="detypo-${VERSION}"
+          STAGE="release-build/${ROOT}"
+          mkdir -p "$STAGE"
+
+          rsync -a \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude ".agents" \
+            --exclude ".Codex" \
+            --exclude ".detypo-key" \
+            --exclude ".detypo-port" \
+            --exclude ".env" \
+            --exclude "__pycache__" \
+            --exclude "*.pyc" \
+            --exclude "frontend/node_modules" \
+            --exclude "uploads" \
+            --exclude "release-build" \
+            ./ "$STAGE/"
+
+          cat > "$STAGE/INSTALL.txt" <<'EOF'
+          Detypo install notes
+
+          Windows:
+            1. Install Python 3.10+ if needed.
+            2. Extract this archive.
+            3. Double-click detypo.bat.
+
+          macOS / Linux:
+            1. Install Python 3.10+ if needed.
+            2. Extract this archive.
+            3. In a terminal, run:
+                 chmod +x ./detypo
+                 ./detypo
+
+          The packaged frontend is already built, so Node.js is not required
+          for normal use. Node.js is only needed for development or rebuilding
+          the frontend from source.
+          EOF
+
+          cd release-build
+          zip -r "../detypo-${VERSION}-prebuilt.zip" "$ROOT"
+          tar -czf "../detypo-${VERSION}-prebuilt.tar.gz" "$ROOT"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Detypo ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            detypo-${{ github.ref_name }}-prebuilt.zip
+            detypo-${{ github.ref_name }}-prebuilt.tar.gz
