@@ -43,7 +43,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 
-const VERSION = 'v1.1.0' + (import.meta.env.DEV ? '-dev' : '')
+const VERSION = 'v1.1.1' + (import.meta.env.DEV ? '-dev' : '')
 
 type ViewType = 'list' | 'card'
 
@@ -267,6 +267,14 @@ export default function App() {
 
   const API = ''  // relative URLs — Vite proxies /api in dev, same-origin in prod
 
+  const cleanupRemoteSession = useCallback((id: string | null) => {
+    if (!id) return
+    fetch(`${API}/api/session/${id}/cleanup`, {
+      method: 'POST',
+      keepalive: true,
+    }).catch(() => {})
+  }, [])
+
   // Load balance on mount
   useEffect(() => {
     if (!apiKey.startsWith('sk-')) return
@@ -374,12 +382,14 @@ export default function App() {
   }, [stopTimer, pushLog, apiKey])
 
   const upload = async (f: File) => {
+    const previousFileId = fileId
     const fd = new FormData(); fd.append('file', f)
     pushLog('uploading...')
     try {
       const r = await fetch(`${API}/api/upload`, { method: 'POST', body: fd })
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'upload failed')
       const d = await r.json()
+      if (previousFileId && previousFileId !== d.file_id) cleanupRemoteSession(previousFileId)
       setFileId(d.file_id); setPageCount(d.page_count); setErrors([]); setExcludedIds(new Set())
       setActiveView('list'); setCurrentPage(1)
       setFilename(f.name)
@@ -576,11 +586,12 @@ export default function App() {
     if (errors.length > 0) {
       setReuploadOpen(true)
     } else {
+      cleanupRemoteSession(fileId)
       setFileId(null)
       setPageRange(null)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errors.length])
+  }, [errors.length, fileId, cleanupRemoteSession])
 
   // Wizard "选择文件" button → open file picker
   const openFilePicker = useCallback(() => {
@@ -589,6 +600,7 @@ export default function App() {
 
   const doUpload = useCallback(() => {
     abortRef.current?.abort(); abortRef.current = null
+    cleanupRemoteSession(fileId)
     setReuploadOpen(false)
     setErrors([])
     setExcludedIds(new Set())
@@ -596,7 +608,7 @@ export default function App() {
     setPageRange(null)
     setPageCount(0)
     setFilename('')
-  }, [])
+  }, [fileId, cleanupRemoteSession])
 
   // ── Derived data ──
   const allPages = [...new Set(errors.map(e => e.page))].sort((a, b) => a - b)
@@ -708,7 +720,11 @@ export default function App() {
               proofLang={proofLang}
               onSetProofLang={setProofLang}
               onUpload={(file) => file ? upload(file) : openFilePicker()}
-              onClose={() => { abortRef.current?.abort(); abortRef.current = null; setFileId(null); setPageRange(null) }}
+              onClose={() => {
+                abortRef.current?.abort(); abortRef.current = null
+                cleanupRemoteSession(fileId)
+                setFileId(null); setPageRange(null)
+              }}
               onStart={(range) => {
                 setPageRange(range)
                 startProofread(range)

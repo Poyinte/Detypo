@@ -11,6 +11,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.background import BackgroundTask
 
 from core.pdf_engine import PdfEngine
 from core.text_annotator import TextAnnotator
@@ -40,6 +41,54 @@ sessions: dict[str, dict] = {}
 
 MAX_UPLOAD_BYTES = int(os.getenv("DETYPO_MAX_UPLOAD_MB", "100")) * 1024 * 1024
 READ_CHUNK_BYTES = 1024 * 1024
+
+
+def _session_working_path(file_id: str) -> str:
+    return os.path.join(UPLOAD_DIR, f"{file_id}.pdf")
+
+
+def _remove_file(path: str | None):
+    if not path:
+        return
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except OSError as exc:
+        logging.warning(f"Failed to remove file {path}: {exc}")
+
+
+def _cleanup_working_pdf(session: dict):
+    _remove_file(session.get("path"))
+    session["path"] = None
+
+
+def _cleanup_session_files(file_id: str, extra_paths: list[str] | None = None):
+    session = sessions.pop(file_id, None)
+    if session:
+        _remove_file(session.get("path"))
+        _remove_file(session.get("orig_path"))
+    for path in extra_paths or []:
+        _remove_file(path)
+
+
+def _ensure_working_pdf(file_id: str, session: dict) -> str:
+    orig_path = session.get("orig_path")
+    if not orig_path or not os.path.exists(orig_path):
+        raise HTTPException(500, "原始 PDF 文件丢失")
+
+    file_path = session.get("path") or _session_working_path(file_id)
+    if not os.path.exists(file_path):
+        shutil.copy2(orig_path, file_path)
+    session["path"] = file_path
+    return file_path
+
+
+def _readable_pdf_path(session: dict) -> str | None:
+    for key in ("path", "orig_path"):
+        path = session.get(key)
+        if path and os.path.exists(path):
+            return path
+    return None
 
 
 # Language profiles — loaded once at startup
@@ -178,7 +227,11 @@ async def get_page_image(file_id: str, page_num: int):
     if not session:
         raise HTTPException(404, "文件不存在")
 
-    engine = PdfEngine(session["path"])
+    pdf_path = _readable_pdf_path(session)
+    if not pdf_path:
+        raise HTTPException(404, "PDF 文件不存在")
+
+    engine = PdfEngine(pdf_path)
     try:
         if page_num < 0 or page_num >= engine.page_count:
             raise HTTPException(404, "页码超出范围")
@@ -194,8 +247,8 @@ async def get_pdf_file(file_id: str):
     session = sessions.get(file_id)
     if not session:
         raise HTTPException(404, "文件不存在")
-    file_path = session["path"]
-    if not os.path.exists(file_path):
+    file_path = _readable_pdf_path(session)
+    if not file_path:
         raise HTTPException(404, "PDF 文件不存在")
     return FileResponse(
         file_path,
@@ -240,7 +293,8 @@ async def proofread_stream(
     if lang not in LANGUAGE_PROFILES:
         lang = "zh"
 
-    engine = PdfEngine(session["path"])
+    file_path = _ensure_working_pdf(file_id, session)
+    engine = PdfEngine(file_path)
     annotator = TextAnnotator(engine)
     llm = LlmClient(api_key=api_key)
     profile = LANGUAGE_PROFILES[lang]
@@ -279,6 +333,7 @@ async def proofread_stream(
                     logging.warning(f"Failed to save PDF for session {file_id}: {e}")
                 finally:
                     engine.close()
+                    _cleanup_working_pdf(session)
                 session["errors"] = proofreader.errors
                 if thread_terminal == "stopped":
                     session["status"] = "stopped"
@@ -334,6 +389,17 @@ async def stop_proofread(file_id: str):
         proofreader.stop()
     session["status"] = "stopped"
     return {"status": "stopped"}
+
+
+@app.post("/api/session/{file_id}/cleanup")
+async def cleanup_session(file_id: str):
+    session = sessions.get(file_id)
+    if not session:
+        return {"status": "missing"}
+    if session.get("status") in ("running", "stopping"):
+        raise HTTPException(400, "校对正在进行中")
+    _cleanup_session_files(file_id)
+    return {"status": "cleaned"}
 
 
 class ExportRequest(BaseModel):
@@ -394,6 +460,7 @@ async def export_pdf(file_id: str, body: ExportRequest):
         output_path,
         media_type="application/pdf",
         filename=f"proofread_{file_id}.pdf",
+        background=BackgroundTask(_cleanup_session_files, file_id, [output_path]),
     )
 
 
